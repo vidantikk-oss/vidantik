@@ -124,6 +124,7 @@ section[id] { scroll-margin-top: 64px; }
 .signature { display: grid; gap: 2px; margin-top: 8px; }
 .signature b { font-family: var(--f-display); color: var(--green); font-size: 1.3rem; }
 .signature span { color: var(--muted); font-size: 1rem; }
+.signature .sig-tel { font-family: var(--f-display); font-weight: 700; color: var(--green); font-size: 1.25rem; white-space: nowrap; text-decoration: none; font-variant-numeric: tabular-nums; }
 
 /* À propos */
 .about { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: clamp(24px, 5vw, 56px); align-items: center; background: var(--paper); border: 1px solid var(--line); padding: clamp(24px, 4vw, 48px); }
@@ -312,7 +313,8 @@ textarea { min-height: 120px; resize: vertical; }
         </div>
         <div class="signature">
           <b>Valentin Santailler</b>
-          <span>Saint-Germain-Nuelles (69210) · <a href="tel:+33744433539">07 44 43 35 39</a></span>
+          <span>Saint-Germain-Nuelles (69210)</span>
+          <a class="sig-tel" href="tel:+33744433539">07 44 43 35 39</a>
         </div>
       </div>
     </div>
