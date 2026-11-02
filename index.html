@@ -232,6 +232,28 @@ textarea { min-height: 120px; resize: vertical; }
 @media (max-width: 900px) { .quote { grid-template-columns: 1fr; } }
 @media (max-width: 480px) { .row2 { grid-template-columns: 1fr; } }
 
+/* Assistant « Une question ? » (réponses écrites à l'avance, sans IA) */
+.chat { position: fixed; right: 16px; bottom: 16px; z-index: 40; width: min(400px, calc(100vw - 32px)); height: min(600px, calc(100vh - 32px)); display: flex; flex-direction: column; background: var(--paper); border: 2px solid var(--green); box-shadow: 0 12px 40px rgba(0, 0, 0, .25); }
+.chat-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px 12px 18px; background: var(--green-deep); color: var(--paper); }
+.chat-head div { display: grid; line-height: 1.25; }
+.chat-head b { font-family: var(--f-display); font-size: 1.1rem; }
+.chat-head span { font-size: .9rem; opacity: .8; }
+.chat-close { width: 38px; height: 38px; border: 1px solid color-mix(in srgb, var(--paper) 50%, transparent); background: transparent; color: var(--paper); font-size: 1.5rem; line-height: 1; cursor: pointer; }
+.chat-log { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; background: var(--cream); }
+.msg { max-width: 88%; padding: 10px 14px; font-size: 1rem; line-height: 1.5; }
+.msg.bot { align-self: flex-start; background: var(--paper); border: 1px solid var(--line); }
+.msg.me { align-self: flex-end; background: var(--green); color: var(--paper); }
+.msg-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.msg-actions .btn { padding: 8px 12px; font-size: .92rem; }
+.chat-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px; border-top: 1px solid var(--line); background: var(--paper); }
+.chat-chips:empty { display: none; }
+.chat-chips button { font: inherit; font-size: .9rem; padding: 6px 10px; border: 1px solid var(--green); background: var(--paper); color: var(--green); cursor: pointer; }
+.chat-chips button:hover { background: var(--green); color: var(--paper); }
+.chat-form { display: flex; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); background: var(--paper); }
+.chat-form input { flex: 1; min-width: 0; }
+.chat-form .btn { padding: 10px 14px; }
+@media (max-width: 600px) { .chat { inset: 0; width: auto; height: auto; border: 0; } }
+
 /* FAQ */
 .faq { max-width: 820px; margin-inline: auto; border-top: 2px solid var(--green); }
 .faq details { border-bottom: 1px solid var(--line); }
@@ -322,7 +344,8 @@ textarea { min-height: 120px; resize: vertical; }
       <a href="#realisations">Notre travail</a>
       <a href="#apropos">À propos</a>
       <a href="#avis">Avis</a>
-      <a href="#faq">Questions</a>
+      <a href="#faq">FAQ</a>
+      <a href="#assistant" class="chat-open">Une question ?</a>
       <a class="btn btn-ochre btn-sm" href="#contact">Devis gratuit</a>
     </nav>
   </div>
@@ -681,6 +704,19 @@ textarea { min-height: 120px; resize: vertical; }
   <a class="btn btn-line" href="#contact">Devis gratuit</a>
 </nav>
 
+<div class="chat" id="assistant" role="dialog" aria-labelledby="chat-title" hidden>
+  <div class="chat-head">
+    <div><b id="chat-title">Assistant Vid'Antik</b><span>Réponse immédiate</span></div>
+    <button type="button" class="chat-close" aria-label="Fermer l'assistant">×</button>
+  </div>
+  <div class="chat-log" id="chat-log" aria-live="polite"></div>
+  <div class="chat-chips" id="chat-chips"></div>
+  <form class="chat-form" id="chat-form">
+    <input type="text" id="chat-input" placeholder="Écrivez votre question…" autocomplete="off" aria-label="Votre question">
+    <button class="btn btn-green" type="submit">Envoyer</button>
+  </form>
+</div>
+
 <script>
 document.querySelectorAll('.ba').forEach(function (ba) {
   var range = ba.querySelector('input');
@@ -806,6 +842,166 @@ var AVIS = [
       form.submit();
     });
   });
+})();
+
+// Assistant « Une question ? » : réponses écrites à l'avance, sans IA.
+// Pour ajouter une question : { q: "Question affichée", mots: ["mots", "repérés"], r: "Réponse.", liens: ["devis", "tel", "toiture", "photos", "faq"] },
+// poids: 3 fait passer une réponse avant les autres quand ses mots sont présents (utilisé pour les questions de prix).
+// Les mots sont repérés en début de mot, sans tenir compte des accents ni des majuscules.
+var REPONSES = [
+  { q: "Le devis est-il gratuit ?", mots: ["gratuit", "devis", "engagement"],
+    r: "Oui. Le devis est gratuit et sans engagement. Il est établi après une visite sur place, afin de vous proposer une solution adaptée à votre situation.", liens: ["devis"] },
+  { q: "Combien ça coûte ?", poids: 3, mots: ["prix", "tarif", "combien ca", "combien coute", "combien cela", "combien pour", "combien vous", "combien me", "c est combien", "ce combien", "combien de sous", "cout", "coute", "cher", "euro", "budget", "payer", "facture"],
+    r: "Chaque situation est différente, je ne peux donc pas vous donner de tarif ici. Faites une demande de devis, en ajoutant si vous le souhaitez quelques photos : Valentin vous recontacte personnellement pour vous proposer un devis gratuit et sans engagement.", liens: ["devis", "tel"] },
+  { q: "Où intervenez-vous ?", mots: ["zone", "secteur", "lyon", "rhone", "region", "deplac", "loin", "france", "auvergne", "departement", "villefranche", "beaujolais", "pres de chez", "ma ville", "ma commune", "intervenez ou", "ou intervenez"],
+    r: "Nous intervenons dans la région lyonnaise et dans toute l'Auvergne-Rhône-Alpes, depuis Saint-Germain-Nuelles (69210). Des déplacements sont aussi possibles partout en France, sur simple demande.", liens: ["devis", "tel"] },
+  { q: "Comment ça se passe ?", mots: ["deroul", "se passe", "etape", "methode", "comment ca marche", "fonctionne", "organis", "visite"],
+    r: "1. Vous nous contactez par téléphone ou via le formulaire. 2. Nous venons sur place évaluer le volume et l'accès, puis nous vous remettons un devis détaillé, gratuit et sans engagement. 3. Nous trions selon vos consignes (objets conservés, dons, revente, recyclage) et évacuons tout. 4. Nettoyage final et restitution des clés : les lieux vous sont rendus propres et dégagés.", liens: ["devis"] },
+  { q: "Dois-je être présent ?", mots: ["present", "presence", "venir pendant", "dois venir", "dois je venir", "etre la", "assister", "cle", "distance", "absent", "pas sur place", "loin de"],
+    r: "Votre présence n'est pas obligatoire. Vous pouvez nous confier les clés, notamment dans le cadre d'une succession à distance. Des photos avant et après intervention peuvent vous être transmises.", liens: ["devis"] },
+  { q: "Que deviennent les documents et souvenirs ?", mots: ["document", "papier", "souvenir", "bijou", "personnel", "album", "lettre", "argent"],
+    r: "Les documents, photographies, bijoux et objets personnels découverts lors du tri sont systématiquement mis de côté et vous sont remis. Aucun bien n'est jeté sans votre accord." },
+  { q: "Rachetez-vous les objets de valeur ?", mots: ["valeur", "ancien", "antiquit", "revend", "rachat", "rachet", "deduction", "deduire", "estim", "brocante", "collection"],
+    r: "Les meubles anciens et objets de valeur sont estimés lors de la visite, et leur valeur est prise en compte dans votre devis. Valentin vous en parle directement sur place.", liens: ["devis"] },
+  { q: "Que faites-vous des objets ?", mots: ["recycl", "dons", "donne", "donnez", "donation", "association", "decharge", "dechet", "ecolog", "environnement", "jet", "ressourcerie", "seconde vie"],
+    r: "Chaque objet est orienté vers la filière la plus adaptée : dons aux associations, ressourceries et recycleries, revente des meubles anciens et objets de brocante, recyclage des métaux, du bois, des cartons et des équipements électriques en filières agréées, et dépôt en déchetterie de ce qui reste, dans le respect de la réglementation." },
+  { q: "Videz-vous les maisons et appartements ?", mots: ["maison", "appartement", "logement", "vider", "debarras complet", "encombrant", "mobilier", "demont"],
+    r: "Oui. Nous faisons le débarras complet ou partiel des maisons et appartements : démontage du mobilier, manutention et évacuation de l'ensemble des encombrants, puis nettoyage.", liens: ["devis"] },
+  { q: "Et les caves, greniers ou garages ?", mots: ["cave", "grenier", "garage", "comble", "sous-sol", "sous sol", "escalier", "ascenseur", "etage", "acces"],
+    r: "Oui. Nous intervenons dans les espaces difficiles d'accès : escaliers étroits, absence d'ascenseur, combles et sous-sols.", liens: ["devis", "photos"] },
+  { q: "Intervenez-vous pour les professionnels ?", mots: ["bureau", "commerce", "entrepot", "atelier", "locaux", "local professionnel", "entreprise", "professionnel", "societe", "magasin", "boutique"],
+    r: "Oui. Nous débarrassons bureaux, commerces, ateliers, entrepôts et dépendances, avec une organisation adaptée à votre activité. Nous proposons aussi le nettoyage de bureaux et de locaux professionnels, selon vos horaires et la fréquence souhaitée.", liens: ["devis"] },
+  { q: "Vous occupez-vous des successions ?", mots: ["succession", "deces", "decede", "defunt", "heritage", "heritier", "notaire", "parent"],
+    r: "Oui. Nous faisons un tri méticuleux des documents et souvenirs, qui sont remis à la famille, puis le débarras et le nettoyage du bien. Votre présence n'est pas obligatoire : vous pouvez nous confier les clés.", liens: ["devis", "tel"] },
+  { q: "Intervenez-vous pour un syndrome de Diogène ?", mots: ["diogene", "insalubr", "accumul", "entass"],
+    r: "Oui. Nous intervenons avec discrétion et bienveillance, en accord avec la personne concernée et en coordination avec sa famille, le bailleur ou les services sociaux.", liens: ["tel"] },
+  { q: "Après un dégât des eaux ou un incendie ?", mots: ["sinistre", "degat", "inond", "incendie", "feu", "brul", "fuite", "eau"],
+    r: "Oui. Après un dégât des eaux ou un incendie, nous évacuons les biens endommagés et remettons les locaux en propreté.", liens: ["tel", "devis"] },
+  { q: "Faites-vous la remise en état ?", mots: ["remise en etat", "etat des lieux", "vendre", "vente", "louer", "location", "relouer", "nettoyage approfondi", "fin de bail", "demenag"],
+    r: "Oui. Nous faisons un nettoyage approfondi pour que le bien soit prêt à être vendu, loué ou réoccupé.", liens: ["devis"] },
+  { q: "Faites-vous le ménage à domicile ?", mots: ["menage", "domicile", "aide", "personne agee", "regulier", "ponctuel", "femme de menage", "quotidien"],
+    r: "Oui. Nous proposons le ménage régulier ou ponctuel chez vous, pour les personnes âgées ou toute personne qui a besoin d'un coup de main au quotidien.", liens: ["devis", "tel"] },
+  { q: "Nettoyez-vous les toitures ?", mots: ["toit", "toiture", "tuile", "mousse", "demouss", "gouttiere", "lichen", "anti-mousse", "faitage"],
+    r: "Oui. Nous faisons le démoussage (retrait de la mousse, du lichen et des salissures sur les tuiles), le traitement anti-mousse pour freiner la repousse, et le nettoyage des gouttières et des descentes.", liens: ["toiture", "devis"] },
+  { q: "Sous quel délai pouvez-vous venir ?", mots: ["delai", "rapide", "quand", "demain", "bientot", "aujourd", "possible", "disponib", "vite", "date", "semaine"],
+    r: "Après votre demande, nous vous recontactons rapidement pour convenir ensemble d'une date de visite. Nous pouvons aussi intervenir en urgence, sous réserve de disponibilité : dans ce cas, appelez directement.", liens: ["tel", "devis"] },
+  { q: "Intervenez-vous en urgence ?", poids: 2, mots: ["urgent", "urgence", "en urgence", "au plus vite", "tres vite", "des que possible", "immediat", "tout de suite", "presse"],
+    r: "Oui, une intervention en urgence est possible, sous réserve de disponibilité. Elle fait l'objet d'un devis spécifique, adapté à cette situation d'urgence. Le plus rapide est d'appeler Valentin directement.", liens: ["tel"] },
+  { q: "Voir des photos de chantiers", mots: ["photo", "avant apres", "avant et apres", "realisation", "exemple", "chantier", "votre travail"],
+    r: "Vous pouvez voir nos réalisations en photos avant / après sur la page d'accueil : faites glisser le curseur sur chaque photo pour comparer.", liens: ["photos"] },
+  { q: "Comment vous contacter ?", mots: ["contact", "telephone", "appel", "joindre", "mail", "numero", "rappel", "parler"],
+    r: "Vous pouvez appeler Valentin au 07 44 43 35 39, écrire à vidantikk@gmail.com, ou remplir le formulaire de demande de devis : nous vous recontactons rapidement.", liens: ["tel", "devis"] },
+  { q: "Qui êtes-vous ?", mots: ["qui etes", "qui est", "valentin", "experience", "passion", "patron", "gerant"],
+    r: "Vid'Antik, c'est Valentin Santailler, à Saint-Germain-Nuelles (69210). Depuis tout petit, il aide sa famille à vider des maisons : c'est là qu'est née sa passion pour les objets anciens. Particuliers comme professionnels, il vous accompagne avec sérieux, écoute et bienveillance." },
+  { q: "Faut-il trier avant votre venue ?", mots: ["trier", "tri ", "avant votre venue", "preparer", "ranger", "faut il vider"],
+    r: "Non, vous n'avez rien à préparer. Le tri est réalisé par nos soins selon vos consignes : objets à conserver, dons, revente et recyclage." },
+  { q: "Puis-je garder certains objets ?", mots: ["garder", "conserver", "recuperer", "mettre de cote", "certains objets", "pas tout"],
+    r: "Oui, bien sûr. Le tri se fait selon vos consignes : vous indiquez ce que vous souhaitez conserver, et ces objets sont mis de côté. Aucun bien n'est jeté sans votre accord." },
+  { q: "Faites-vous les petits débarras ?", mots: ["petit", "quelques meubles", "un meuble", "une piece", "partiel"],
+    r: "Oui. Nous faisons le débarras complet ou partiel : une pièce, quelques meubles, une cave ou un garage. Décrivez-nous votre besoin dans la demande de devis.", liens: ["devis"] },
+  { q: "Combien de temps dure un débarras ?", mots: ["combien de temps", "duree", "dure", "nombre de jours", "une journee", "heures"],
+    r: "Cela dépend du volume et de l'accès. La durée de l'intervention vous est précisée lors de la visite, avec le devis.", liens: ["devis"] },
+  { q: "Puis-je envoyer des photos ?", mots: ["envoy", "envoyer des photos", "envoyer une photo", "mes photos", "joindre", "piece jointe", "photographier"],
+    r: "Oui. Dans le formulaire de demande de devis, vous pouvez ajouter jusqu'à 8 photos du bien (pièces, accès, escaliers…). Cela permet à Valentin de mieux préparer la visite.", liens: ["devis"] },
+  { q: "Démontez-vous les meubles ?", mots: ["demont", "armoire", "lit", "cuisine", "lourd", "porter", "manutention", "transport", "camion"],
+    r: "Oui. Le démontage du mobilier, la manutention et l'évacuation de l'ensemble des encombrants sont pris en charge.", liens: ["devis"] },
+  { q: "Prenez-vous l'électroménager ?", mots: ["electromenager", "frigo", "refrigerateur", "congelateur", "machine a laver", "lave", "televiseur", "electrique", "electronique"],
+    r: "Oui. Les équipements électriques et l'électroménager sont déposés dans des filières de recyclage agréées." },
+  { q: "Êtes-vous discret ?", mots: ["discret", "discretion", "voisin", "confidenti", "respect"],
+    r: "Oui. La discrétion fait partie de nos engagements : respect des lieux, des biens et des personnes, en particulier dans les situations délicates comme une succession ou un syndrome de Diogène." },
+  { q: "Êtes-vous une entreprise déclarée ?", mots: ["declare", "siret", "entreprise", "serieux", "assurance", "assure", "professionnel du", "legal", "auto entrepreneur"],
+    r: "Oui. Vid'Antik est une entreprise immatriculée (SIRET 992 885 640 00019), basée à Saint-Germain-Nuelles (69210). Pour toute question sur nos garanties, n'hésitez pas à appeler Valentin.", liens: ["tel"] },
+  { q: "Que disent vos clients ?", mots: ["avis", "client", "temoignage", "recommand", "satisf", "note", "google"],
+    r: "Vous pouvez lire les avis de nos clients sur la page d'accueil, dans la rubrique « Ils nous ont fait confiance ».", liens: ["avis"] },
+  { q: "Et après ma demande de devis ?", mots: ["apres ma demande", "j ai envoye", "formulaire envoye", "sans nouvelle", "pas de reponse", "recontact"],
+    r: "Valentin vous recontacte rapidement pour convenir ensemble d'une visite. Si vous n'avez pas de nouvelles, n'hésitez pas à l'appeler directement.", liens: ["tel"] },
+  { q: "Pouvez-vous venir le week-end ?", mots: ["week end", "weekend", "samedi", "dimanche", "soir", "horaire"],
+    r: "Oui, nous pouvons intervenir le week-end. Indiquez vos disponibilités dans la demande de devis, ou appelez Valentin pour convenir ensemble d'une date.", liens: ["devis", "tel"] }
+];
+var SUGGESTIONS = [0, 1, 2, 3, 7, 18];
+var LIENS = {
+  devis: { texte: "Demander un devis", href: "#contact", cls: "btn-green" },
+  tel: { texte: "Appeler le 07 44 43 35 39", href: "tel:+33744433539", cls: "btn-line" },
+  toiture: { texte: "Page toiture", href: "toiture.html", cls: "btn-line" },
+  photos: { texte: "Voir les photos", href: "#realisations", cls: "btn-line" },
+  faq: { texte: "Voir la FAQ", href: "#faq", cls: "btn-line" },
+  avis: { texte: "Voir les avis", href: "#avis", cls: "btn-line" }
+};
+(function () {
+  var box = document.getElementById('assistant');
+  var log = document.getElementById('chat-log');
+  var chips = document.getElementById('chat-chips');
+  var chatForm = document.getElementById('chat-form');
+  var input = document.getElementById('chat-input');
+  var asked = [];
+  var simple = function (s) { return ' ' + s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ') + ' '; };
+
+  var say = function (who, text, liens) {
+    var div = document.createElement('div');
+    div.className = 'msg ' + who;
+    div.textContent = text;
+    if (liens && liens.length) {
+      var row = document.createElement('div'); row.className = 'msg-actions';
+      liens.forEach(function (k) {
+        var l = LIENS[k], a = document.createElement('a');
+        a.className = 'btn ' + l.cls; a.href = l.href; a.textContent = l.texte;
+        if (l.href.charAt(0) === '#') a.addEventListener('click', close);
+        row.appendChild(a);
+      });
+      div.appendChild(row);
+    }
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+  };
+  var showChips = function () {
+    chips.innerHTML = '';
+    SUGGESTIONS.filter(function (i) { return asked.indexOf(i) < 0; }).slice(0, 4).forEach(function (i) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.textContent = REPONSES[i].q;
+      b.addEventListener('click', function () { answer(REPONSES[i].q, i); });
+      chips.appendChild(b);
+    });
+  };
+  var find = function (question) {
+    var text = simple(question), best = -1, bestScore = 0;
+    REPONSES.forEach(function (e, i) {
+      var score = (e.poids || 1) * e.mots.reduce(function (n, m) { return n + (text.indexOf(' ' + simple(m).trim()) >= 0 ? 1 : 0); }, 0);
+      if (score > bestScore) { best = i; bestScore = score; }
+    });
+    return best;
+  };
+  var answer = function (question, i) {
+    say('me', question);
+    if (i < 0) {
+      say('bot', "Je n'ai pas de réponse toute prête à cette question. Le plus simple est d'appeler Valentin, ou de faire une demande de devis : nous vous recontactons rapidement.", ['tel', 'devis']);
+    } else {
+      if (asked.indexOf(i) < 0) asked.push(i);
+      say('bot', REPONSES[i].r, REPONSES[i].liens);
+    }
+    showChips();
+  };
+  var open = function (e) {
+    if (e) e.preventDefault();
+    box.hidden = false;
+    if (!log.children.length) {
+      say('bot', "Bonjour ! Posez-moi vos questions sur nos débarras, le nettoyage, la toiture ou notre zone d'intervention. Pour un prix précis, Valentin vous établit un devis gratuit sur place.");
+      showChips();
+    }
+    if (window.matchMedia('(min-width: 601px)').matches) input.focus();
+  };
+  function close() { box.hidden = true; }
+
+  document.querySelectorAll('.chat-open').forEach(function (a) { a.addEventListener('click', open); });
+  box.querySelector('.chat-close').addEventListener('click', close);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !box.hidden) close(); });
+  chatForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var q = input.value.trim();
+    if (!q) return;
+    input.value = '';
+    answer(q, find(q));
+  });
+  if (location.hash === '#assistant') open();
 })();
 </script>
 
