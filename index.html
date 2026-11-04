@@ -83,6 +83,13 @@ section[id] { scroll-margin-top: 64px; }
 .nav { display: flex; gap: 22px; align-items: center; font-size: 1rem; }
 .nav a { text-decoration: none; opacity: .88; white-space: nowrap; }
 .nav a:hover { opacity: 1; text-decoration: underline; text-underline-offset: 4px; }
+.nav a.nav-sim { opacity: 1; color: #f3b866; font-weight: 600; }
+.sim-band { background: var(--ochre); color: #22180c; }
+.sim-band .wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 18px; padding-block: 12px; text-align: center; }
+.sim-band p { margin: 0; font-size: 1.02rem; }
+.sim-band b { font-family: var(--f-display); }
+.sim-band a { font-family: var(--f-display); font-weight: 700; background: var(--green-deep); color: var(--paper); text-decoration: none; padding: 9px 16px; white-space: nowrap; }
+.sim-band a:hover { background: var(--green); }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-family: var(--f-display); font-weight: 700; font-size: 1rem; padding: 13px 22px; border: 2px solid var(--green); text-decoration: none; cursor: pointer; transition: background .15s ease, color .15s ease; }
 .btn-green { background: var(--green); color: var(--paper); }
 .btn-green:hover { background: var(--green-deep); }
@@ -350,10 +357,18 @@ textarea { min-height: 120px; resize: vertical; }
       <a href="#apropos">À propos</a>
       <a href="#faq">FAQ</a>
       <a href="#assistant" class="chat-open">Une question ?</a>
+      <a href="simulateur.html" class="nav-sim">📸 Simulateur photo</a>
       <a class="btn btn-ochre btn-sm" href="#contact">Devis gratuit</a>
     </nav>
   </div>
 </header>
+
+<div class="band sim-band">
+  <div class="wrap">
+    <p><b>📸 Nouveau :</b> déposez la photo de votre pièce encombrée et voyez-la vidée par notre camion, en quelques secondes.</p>
+    <a href="simulateur.html">Essayer avec ma photo →</a>
+  </div>
+</div>
 
 <section class="band hero" id="top">
   <div class="wrap">
@@ -365,6 +380,7 @@ textarea { min-height: 120px; resize: vertical; }
         <p class="tagline">On fait place nette, vous retrouvez la sérénité !</p>
         <div class="hero-ctas">
           <a class="btn btn-green" href="#contact">Demander un devis gratuit</a>
+          <a class="btn btn-line" href="simulateur.html">📸 Voir ma pièce vidée</a>
           <a class="btn btn-line" href="#realisations">Voir nos réalisations en photos</a>
           <a class="btn btn-line" href="#prestations">Nos prestations</a>
         </div>
