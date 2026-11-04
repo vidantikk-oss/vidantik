@@ -442,7 +442,7 @@ main { padding-block: clamp(28px, 5vw, 56px); }
       if (stage.dataset.mode !== 'compare' || !$('#modal').hidden || !$('#errModal').hidden) return;
       $('#devisImg').src = imgAfter.src;
       $('#devisModal').hidden = false; $('#devisGo').focus();
-    }, 5000);
+    }, 10000);
     if (!isSample) imgAfter.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 500 });
     stage.classList.remove('waiting');
     tilesEl.innerHTML = '';
