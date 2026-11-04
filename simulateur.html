@@ -61,7 +61,25 @@ main { padding-block: clamp(28px, 5vw, 56px); }
 .stage[data-mode="compare"] .before-wrap { clip-path: inset(0 calc(100% - var(--x, 50%)) 0 0); }
 .stage[data-mode="run"] .before-wrap { visibility: hidden; }
 .stage[data-mode="run"].waiting #imgAfter { visibility: hidden; }
-.stage.waiting { background: var(--paper); }
+.stage { container-type: inline-size; }
+.wait-card { --c: clamp(5px, 1.3cqw, 11px); position: absolute; inset: 0; display: none; padding: calc(var(--c) * 2);
+  background-color: var(--paper); background-image: conic-gradient(var(--paper) 25%, var(--green) 0 50%, var(--paper) 0 75%, var(--green) 0);
+  background-size: calc(var(--c) * 2) calc(var(--c) * 2); }
+.stage.waiting .wait-card { display: block; }
+.wait-inner { height: 100%; display: grid; place-content: center; justify-items: center; text-align: center; gap: clamp(2px, 1.2cqw, 12px); padding: 3cqw; background: var(--paper); border: 2px solid var(--green); }
+.stage .wait-card img { position: static; inset: auto; width: min(40cqw, 300px); height: auto; object-fit: contain; }
+.wait-card .w-name { font-family: var(--f-display); font-weight: 700; color: var(--green); font-size: clamp(1.4rem, 9cqw, 4.2rem); letter-spacing: .03em; line-height: 1; }
+.wait-card .w-rule { font-family: var(--f-display); font-weight: 700; color: var(--brown); text-transform: uppercase; letter-spacing: .06em; font-size: clamp(.62rem, 2.1cqw, 1.05rem); }
+.wait-card .w-tag { font-style: italic; color: var(--muted); font-size: clamp(.72rem, 2.5cqw, 1.25rem); }
+.wait-card .w-sig { color: var(--muted); font-size: clamp(.62rem, 1.9cqw, .98rem); }
+.wait-card .w-sig b { color: var(--green); font-family: var(--f-display); }
+.wait-card .w-load { display: flex; align-items: center; gap: 8px; margin-top: 1cqw; font-family: var(--f-display); font-weight: 700; color: var(--green-deep); font-size: clamp(.68rem, 2.2cqw, 1.05rem); }
+.dots { display: inline-flex; gap: 4px; }
+.dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--ochre); animation: dot 1.2s infinite ease-in-out; }
+.dots i:nth-child(2) { animation-delay: .2s; } .dots i:nth-child(3) { animation-delay: .4s; }
+@keyframes dot { 0%, 80%, 100% { transform: scale(.5); opacity: .4; } 40% { transform: scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .dots i { animation: none; } }
+@container (max-width: 380px) { .wait-card .w-tag, .wait-card .w-sig { display: none; } }
 .tiles { position: absolute; inset: 0; pointer-events: none; }
 .tile { position: absolute; background-repeat: no-repeat; will-change: transform; }
 .truck { position: absolute; right: 3%; bottom: 3%; width: 38%; transform: translateX(140%); pointer-events: none; filter: drop-shadow(0 6px 6px rgba(0,0,0,.25)); }
@@ -169,6 +187,14 @@ main { padding-block: clamp(28px, 5vw, 56px); }
         <span class="sample-tag" id="sampleTag">Pièce d'exemple</span>
         <img id="imgAfter" alt="La pièce après débarras et nettoyage (simulation)">
         <div class="before-wrap" id="beforeWrap"><img id="imgBefore" alt="La pièce encombrée, avant débarras"></div>
+        <div class="wait-card" aria-live="polite"><div class="wait-inner">
+          <p class="w-name">VID'ANTIK</p>
+          <img src="maison.png" width="462" height="202" alt="">
+          <p class="w-rule">Débarras &amp; nettoyage spécialisé</p>
+          <p class="w-tag">On fait place nette, vous retrouvez la sérénité !</p>
+          <p class="w-sig"><b>Valentin Santailler</b> · Saint-Germain-Nuelles (69210) · 07 44 43 35 39</p>
+          <p class="w-load"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>Le camion range tout, votre pièce vidée arrive…</p>
+        </div></div>
         <div class="tiles" id="tiles"></div>
         <div class="truck" id="truck" aria-hidden="true">
           <svg viewBox="0 0 316 162">
@@ -492,7 +518,6 @@ main { padding-block: clamp(28px, 5vw, 56px); }
     if (failed) return;
     truck.getAnimations().forEach(a => a.cancel());
     truck.style.transform = 'translateX(140%)';
-    if (!isSample) demoBadge.hidden = false;
     try { await aiJob; } catch (e) { return; }
     await wait(150);
     toCompare();
