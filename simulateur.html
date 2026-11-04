@@ -225,6 +225,15 @@ main { padding-block: clamp(28px, 5vw, 56px); }
   </div>
 </div>
 
+<div class="modal-back" id="errModal" hidden>
+  <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="errTitle">
+    <h2 id="errTitle">Le camion n'a pas pu terminer</h2>
+    <p class="modal-consent" id="errText"></p>
+    <p class="small" id="errDetail"></p>
+    <div class="actions"><button class="btn btn-green" id="errOk" type="button">Compris</button></div>
+  </div>
+</div>
+
 <footer class="band footer">
   <div class="wrap">© 2026 Vid'Antik · SIRET 992 885 640 00019 · <a href="mentions-legales.html">Mentions légales</a></div>
 </footer>
@@ -351,7 +360,11 @@ main { padding-block: clamp(28px, 5vw, 56px); }
       throw new Error(e.name === 'AbortError' ? "L'intelligence artificielle met trop de temps à répondre. Réessayez dans un instant." : "Connexion impossible. Vérifiez votre connexion internet et réessayez.");
     } finally { clearTimeout(timer); }
     const data = await r.json().catch(() => ({}));
-    if (!r.ok || !data.image) throw new Error(data.erreur || "La transformation n'a pas fonctionné. Réessayez dans un instant.");
+    if (!r.ok || !data.image) {
+      const err = new Error(data.erreur || "La transformation n'a pas fonctionné. Réessayez dans un instant.");
+      err.detail = (data.detail || '') + ' [code ' + r.status + ']';
+      throw err;
+    }
     const url = 'data:' + (data.mime || 'image/png') + ';base64,' + data.image;
     await new Promise((ok, ko) => { imgAfter.onload = ok; imgAfter.onerror = () => ko(new Error("Image reçue illisible.")); imgAfter.src = url; });
   }
@@ -363,6 +376,9 @@ main { padding-block: clamp(28px, 5vw, 56px); }
     stage.dataset.mode = 'before'; setStep(1);
     running = false; go.disabled = false;
     msg.textContent = err.message || String(err);
+    $('#errText').textContent = err.message || String(err);
+    $('#errDetail').textContent = err.detail ? 'Détail technique : ' + err.detail : '';
+    $('#errModal').hidden = false; $('#errOk').focus();
   }
 
   /* ---------- Animation du camion ---------- */
@@ -470,6 +486,7 @@ main { padding-block: clamp(28px, 5vw, 56px); }
   function closeModal() { modal.hidden = true; go.focus(); }
   $('#modalOk').addEventListener('click', () => { consent.checked = true; modal.hidden = true; run(); });
   $('#modalNo').addEventListener('click', closeModal);
+  $('#errOk').addEventListener('click', () => { $('#errModal').hidden = true; go.focus(); });
   modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.hidden) closeModal(); });
 
