@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simulateur de débarras | Vid'Antik</title>
+<meta name="robots" content="noindex">
+<meta name="description" content="Déposez la photo de votre pièce encombrée et découvrez-la vidée et nettoyée après le passage de Vid'Antik.">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:wght@400;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+/* Mise en page : bande verte de la marque en tête, atelier à une colonne centré sur la scène photo. Charte claire de vidantik.fr, volontairement en un seul thème. */
+:root {
+  --cream: #f7f2df; --paper: #fffcf0; --green: #2d5a3a; --green-deep: #1f4029;
+  --ochre: #d98e2b; --brown: #5a3a22; --ink: #2c2a24; --muted: #5e5a4c; --line: #d9d0b2; --sky: #cfe3ea;
+  --f-display: "Libre Caslon Text", Georgia, "Times New Roman", serif;
+  --f-body: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --sq: 12px; --rule: 3px;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--cream); color: var(--ink); font-family: var(--f-body); font-size: 1.05rem; line-height: 1.6; }
+h1, h2, h3 { font-family: var(--f-display); color: var(--green); margin: 0; line-height: 1.15; text-wrap: balance; }
+p { margin: 0; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--ochre); outline-offset: 2px; }
+.band { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin-inline: auto; }
+.topbar { background: var(--green-deep); color: var(--paper); }
+.topbar .wrap { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-block: 12px; }
+.logo { font-family: var(--f-display); font-weight: 700; font-size: 1.45rem; letter-spacing: .03em; }
+.topbar small { opacity: .8; font-size: .95rem; }
+.checker { height: calc(var(--sq) * 2 + var(--rule) * 2); border-block: var(--rule) solid var(--green);
+  background-color: var(--paper); background-image: conic-gradient(var(--paper) 25%, var(--green) 0 50%, var(--paper) 0 75%, var(--green) 0);
+  background-size: calc(var(--sq) * 2) calc(var(--sq) * 2); }
+
+main { padding-block: clamp(28px, 5vw, 56px); }
+.intro { display: grid; gap: 12px; justify-items: center; text-align: center; margin-bottom: 28px; }
+.kicker { display: flex; align-items: center; gap: 12px; font-family: var(--f-display); font-size: .82rem; letter-spacing: .14em; text-transform: uppercase; color: var(--brown); }
+.kicker::before, .kicker::after { content: ""; width: 28px; height: 1px; background: currentColor; }
+.intro h1 { font-size: clamp(1.9rem, 5vw, 2.7rem); }
+.intro p { color: var(--muted); max-width: 58ch; }
+.proto { border: 1px dashed var(--ochre); background: var(--paper); color: var(--brown); font-size: .95rem; padding: 10px 14px; max-width: 64ch; }
+
+.atelier { background: var(--paper); border: 1px solid var(--line); padding: clamp(16px, 3vw, 28px); display: grid; gap: 18px; }
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 22px; font-family: var(--f-display); font-size: .95rem; color: var(--muted); }
+.steps li { display: flex; align-items: center; gap: 8px; }
+.steps b { width: 28px; height: 28px; display: grid; place-items: center; border: 2px solid var(--line); color: var(--muted); font-weight: 700; }
+.steps li.on { color: var(--green); }
+.steps li.on b { border-color: var(--green); background: var(--green); color: var(--paper); }
+
+.stage { position: relative; width: 100%; max-width: 100%; aspect-ratio: 3 / 2; overflow: hidden; background: var(--line); border: 3px solid var(--green); }
+.stage img, .stage .before-wrap { position: absolute; inset: 0; width: 100%; height: 100%; }
+.stage img { object-fit: cover; display: block; }
+.before-wrap { overflow: hidden; }
+.stage[data-mode="compare"] .before-wrap { clip-path: inset(0 calc(100% - var(--x, 50%)) 0 0); }
+.stage[data-mode="run"] .before-wrap { visibility: hidden; }
+.stage[data-mode="run"].waiting #imgAfter { filter: blur(14px) brightness(1.1); }
+.tiles { position: absolute; inset: 0; pointer-events: none; }
+.tile { position: absolute; background-repeat: no-repeat; will-change: transform; }
+.truck { position: absolute; right: 3%; bottom: 3%; width: 38%; transform: translateX(140%); pointer-events: none; filter: drop-shadow(0 6px 6px rgba(0,0,0,.25)); }
+.truck svg { display: block; width: 100%; height: auto; }
+.tag { position: absolute; top: 10px; font-family: var(--f-display); font-weight: 700; font-size: .8rem; letter-spacing: .1em; text-transform: uppercase; padding: 4px 10px; background: var(--green-deep); color: var(--paper); display: none; }
+.tag-before { left: 10px; } .tag-after { right: 10px; background: var(--ochre); color: #22180c; }
+.stage[data-mode="compare"] .tag { display: block; }
+.divider { position: absolute; top: 0; bottom: 0; left: var(--x, 50%); width: 3px; margin-left: -1.5px; background: var(--paper); box-shadow: 0 0 0 1px rgba(0,0,0,.25); pointer-events: none; display: none; }
+.divider::after { content: "◀ ▶"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--paper); color: var(--green); border: 2px solid var(--green); font-size: .75rem; padding: 6px 8px; white-space: nowrap; }
+.stage[data-mode="compare"] .divider { display: block; }
+.slider { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; display: none; }
+.stage[data-mode="compare"] .slider { display: block; }
+.demo-badge { position: absolute; left: 10px; right: 10px; bottom: 10px; background: rgba(31, 64, 41, .9); color: var(--paper); font-size: .9rem; padding: 8px 12px; text-align: center; }
+
+.controls { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+.drop { display: grid; gap: 6px; justify-items: center; text-align: center; border: 2px dashed var(--green); padding: 18px 14px; cursor: pointer; background: var(--cream); }
+.drop.over { background: #efe6c6; }
+.drop b { font-family: var(--f-display); color: var(--green); font-size: 1.05rem; }
+.drop span { color: var(--muted); font-size: .92rem; }
+.drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.consent { display: flex; gap: 10px; align-items: flex-start; font-size: .92rem; color: var(--muted); margin-top: 10px; }
+.consent input { margin-top: 5px; accent-color: var(--green); }
+.msg { color: #9b2c1c; font-size: .92rem; min-height: 1.2em; margin-top: 6px; }
+.side { display: grid; gap: 10px; align-content: start; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-family: var(--f-display); font-weight: 700; font-size: 1rem; padding: 13px 20px; border: 2px solid var(--green); text-decoration: none; cursor: pointer; background: transparent; color: var(--green); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-ochre { background: var(--ochre); border-color: var(--ochre); color: #22180c; font-size: 1.1rem; padding: 16px 22px; }
+.btn-ochre:not(:disabled):hover { filter: brightness(1.06); }
+.btn-green { background: var(--green); color: var(--paper); }
+.btn-green:hover { background: var(--green-deep); }
+.btn-line:hover { background: var(--green); color: var(--paper); }
+.hint { color: var(--muted); font-size: .9rem; }
+
+.result { display: grid; gap: 12px; border-top: 1px dashed var(--line); padding-top: 18px; }
+.result h2 { font-size: clamp(1.4rem, 3vw, 1.8rem); }
+.result p { color: var(--muted); max-width: 62ch; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.phone { font-family: var(--f-display); font-weight: 700; color: var(--green); user-select: all; }
+.small { font-size: .85rem; color: var(--muted); font-style: italic; }
+
+.footer { background: var(--green-deep); color: var(--paper); }
+.footer .wrap { padding-block: 18px; font-size: .9rem; opacity: .85; }
+
+@media (max-width: 700px) {
+  .controls { grid-template-columns: 1fr; }
+  .truck { width: 46%; }
+  .stage { aspect-ratio: 4 / 3; }
+  :root { --sq: 8px; --rule: 2px; }
+}
+</style>
+</head>
+<body>
+
+<header class="band topbar">
+  <div class="wrap"><a class="logo" href="./" style="text-decoration:none">VID'ANTIK</a><a href="./" style="text-decoration:none;opacity:.88">← Retour au site</a></div>
+</header>
+<div class="checker" aria-hidden="true"></div>
+
+<main class="band">
+  <div class="wrap">
+    <div class="intro">
+      <span class="kicker">Simulateur</span>
+      <h1>Voyez votre pièce après notre passage</h1>
+      <p>Déposez une photo de la pièce encombrée, appelez le camion Vid'Antik, et découvrez à quoi elle ressemblera une fois vidée et nettoyée.</p>
+      <p class="proto">L'image « après » est créée par intelligence artificielle : c'est une simulation pour vous aider à vous projeter. Le résultat réel de notre intervention peut différer.</p>
+    </div>
+
+    <section class="atelier" aria-label="Simulateur de débarras">
+      <ol class="steps" id="steps">
+        <li class="on" data-step="1"><b>1</b>Votre photo</li>
+        <li data-step="2"><b>2</b>Le camion passe</li>
+        <li data-step="3"><b>3</b>Avant / après</li>
+      </ol>
+
+      <div class="stage" id="stage" data-mode="before">
+        <img id="imgAfter" alt="La pièce après débarras et nettoyage (simulation)">
+        <div class="before-wrap" id="beforeWrap"><img id="imgBefore" alt="La pièce encombrée, avant débarras"></div>
+        <div class="tiles" id="tiles"></div>
+        <div class="truck" id="truck" aria-hidden="true">
+          <svg viewBox="0 0 316 162">
+            <rect x="108" y="18" width="200" height="112" rx="4" fill="var(--green)" stroke="var(--green-deep)" stroke-width="4"/>
+            <rect x="108" y="104" width="200" height="9" fill="var(--ochre)"/>
+            <text x="208" y="70" text-anchor="middle" fill="var(--paper)" font-family="Libre Caslon Text, Georgia, serif" font-weight="700" font-size="27" letter-spacing="1">VID'ANTIK</text>
+            <text x="208" y="93" text-anchor="middle" fill="var(--paper)" font-family="Source Serif 4, Georgia, serif" font-size="13">Débarras &amp; nettoyage</text>
+            <path d="M108 46 H54 L14 90 V130 H108 Z" fill="var(--green)" stroke="var(--green-deep)" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M98 56 H60 L30 88 H98 Z" fill="var(--sky)" stroke="var(--green-deep)" stroke-width="3"/>
+            <rect x="4" y="116" width="22" height="10" fill="var(--ochre)"/>
+            <circle cx="70" cy="136" r="22" fill="var(--ink)"/><circle cx="70" cy="136" r="9" fill="var(--line)"/>
+            <circle cx="252" cy="136" r="22" fill="var(--ink)"/><circle cx="252" cy="136" r="9" fill="var(--line)"/>
+          </svg>
+        </div>
+        <span class="tag tag-before">Avant</span><span class="tag tag-after">Après</span>
+        <div class="divider" aria-hidden="true"></div>
+        <input class="slider" id="slider" type="range" min="0" max="100" value="50" aria-label="Glisser pour comparer avant et après">
+        <div class="demo-badge" id="demoBadge" hidden>Le camion range tout… La photo de votre pièce vidée arrive dans quelques secondes.</div>
+      </div>
+
+      <div class="controls">
+        <div>
+          <label class="drop" id="drop" for="file">
+            <b>Déposer la photo de votre pièce</b>
+            <span>Glissez une photo ici, ou touchez pour en choisir une (salon, cave, grenier, garage…)</span>
+            <input id="file" type="file" accept="image/*">
+          </label>
+          <label class="consent" for="consent">
+            <input id="consent" type="checkbox">
+            <span>J'accepte que ma photo soit transmise à notre service d'intelligence artificielle (Google) uniquement pour réaliser cette simulation. Vid'Antik ne la conserve pas. <a href="mentions-legales.html#confidentialite">En savoir plus</a></span>
+          </label>
+          <p class="msg" id="msg" role="status"></p>
+        </div>
+        <div class="side">
+          <button class="btn btn-ochre" id="go" type="button">🚚 Appeler le camion Vid'Antik</button>
+          <button class="btn btn-line" id="sample" type="button">Reprendre la photo d'exemple</button>
+          <p class="hint" id="hint">Une pièce d'exemple est déjà chargée : appuyez sur le bouton orange pour voir le camion à l'œuvre.</p>
+        </div>
+      </div>
+
+      <div class="result" id="result" hidden>
+        <h2>Votre pièce, après notre passage</h2>
+        <p>Faites glisser la photo de gauche à droite pour comparer. Pour obtenir ce résultat chez vous, demandez votre devis : il est gratuit, établi sur place et sans engagement.</p>
+        <div class="actions">
+          <a class="btn btn-green" href="./#contact">Je veux ce résultat : devis gratuit</a>
+          <span>ou appelez le <span class="phone">07 44 43 35 39</span></span>
+        </div>
+        <p class="small">Simulation indicative, résultat non contractuel.</p>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="band footer">
+  <div class="wrap">© 2026 Vid'Antik · SIRET 992 885 640 00019 · <a href="mentions-legales.html">Mentions légales</a></div>
+</footer>
+
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const stage = $('#stage'), imgBefore = $('#imgBefore'), imgAfter = $('#imgAfter'), tilesEl = $('#tiles'),
+        truck = $('#truck'), slider = $('#slider'), go = $('#go'), msg = $('#msg'), result = $('#result'),
+        demoBadge = $('#demoBadge'), consent = $('#consent'), fileInput = $('#file'), drop = $('#drop'), hint = $('#hint');
+  // Adresse de l'intermédiaire Cloudflare (à remplir une fois créé)
+  const API = '';
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let beforeURL = '', running = false, isSample = true, aiJob = null;
+
+  function setStep(n) {
+    document.querySelectorAll('#steps li').forEach(li => li.classList.toggle('on', Number(li.dataset.step) <= n));
+  }
+
+  /* ---------- Pièce d'exemple dessinée ---------- */
+  function drawRoom(ctx, w, h, clutter) {
+    const fy = h * 0.68;
+    ctx.fillStyle = '#e9dcc0'; ctx.fillRect(0, 0, w, fy);
+    ctx.fillStyle = 'rgba(120,90,50,0.06)'; for (let x = 0; x < w; x += 44) ctx.fillRect(x, 0, 20, fy);
+    ctx.fillStyle = '#b98a5a'; ctx.fillRect(0, fy, w, h - fy);
+    ctx.strokeStyle = 'rgba(80,50,25,0.35)'; ctx.lineWidth = 2;
+    for (let y = fy + 30; y < h; y += 34) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+    ctx.fillStyle = '#f3ead6'; ctx.fillRect(0, fy - h * 0.02, w, h * 0.025);
+    const wx = w * 0.6, wy = h * 0.12, ww = w * 0.24, wh = h * 0.34;
+    ctx.fillStyle = '#cfe3ea'; ctx.fillRect(wx, wy, ww, wh);
+    ctx.strokeStyle = '#f3ead6'; ctx.lineWidth = 14; ctx.strokeRect(wx, wy, ww, wh);
+    ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(wx + ww / 2, wy); ctx.lineTo(wx + ww / 2, wy + wh); ctx.moveTo(wx, wy + wh / 2); ctx.lineTo(wx + ww, wy + wh / 2); ctx.stroke();
+    ctx.fillStyle = '#8a5a34'; ctx.fillRect(w * 0.06, h * 0.2, w * 0.13, fy - h * 0.2);
+    ctx.fillStyle = '#d98e2b'; ctx.beginPath(); ctx.arc(w * 0.17, h * 0.45, 7, 0, Math.PI * 2); ctx.fill();
+    if (!clutter) {
+      ctx.fillStyle = 'rgba(255,250,225,0.4)'; ctx.beginPath();
+      ctx.moveTo(wx, fy + 10); ctx.lineTo(wx + ww, fy + 10); ctx.lineTo(wx + ww * 1.35, h); ctx.lineTo(wx - ww * 0.25, h); ctx.closePath(); ctx.fill();
+      return;
+    }
+    const box = (x, y, bw, bh, c) => {
+      ctx.fillStyle = c || '#c9995b'; ctx.fillRect(x, y, bw, bh);
+      ctx.strokeStyle = 'rgba(60,35,15,.55)'; ctx.lineWidth = 3; ctx.strokeRect(x, y, bw, bh);
+      ctx.fillStyle = 'rgba(240,225,190,.7)'; ctx.fillRect(x, y + bh * 0.42, bw, bh * 0.12);
+    };
+    ctx.fillStyle = '#6e4426'; ctx.fillRect(w * 0.24, h * 0.18, w * 0.17, h * 0.6);
+    ctx.strokeStyle = '#3e2412'; ctx.lineWidth = 4; ctx.strokeRect(w * 0.24, h * 0.18, w * 0.17, h * 0.6);
+    ctx.beginPath(); ctx.moveTo(w * 0.325, h * 0.18); ctx.lineTo(w * 0.325, h * 0.78); ctx.stroke();
+    box(w * 0.02, h * 0.66, w * 0.14, h * 0.18); box(w * 0.04, h * 0.52, w * 0.11, h * 0.14, '#d4a86c'); box(w * 0.05, h * 0.40, w * 0.09, h * 0.12, '#bf8c4f');
+    ctx.fillStyle = '#d98e2b'; ctx.fillRect(w * 0.42, h * 0.42, w * 0.06, h * 0.2); ctx.fillStyle = '#cfe3ea'; ctx.fillRect(w * 0.43, h * 0.44, w * 0.04, h * 0.16);
+    box(w * 0.44, h * 0.62, w * 0.13, h * 0.2); box(w * 0.47, h * 0.5, w * 0.1, h * 0.12, '#d4a86c');
+    ctx.strokeStyle = '#4a2c16'; ctx.lineWidth = 10; ctx.beginPath();
+    ctx.moveTo(w * 0.6, h * 0.58); ctx.lineTo(w * 0.6, h * 0.76); ctx.moveTo(w * 0.68, h * 0.58); ctx.lineTo(w * 0.68, h * 0.76); ctx.moveTo(w * 0.58, h * 0.6); ctx.lineTo(w * 0.7, h * 0.6); ctx.stroke();
+    box(w * 0.74, h * 0.7, w * 0.16, h * 0.2, '#bf8c4f'); box(w * 0.62, h * 0.78, w * 0.12, h * 0.15);
+    ctx.fillStyle = '#3a3a36'; ctx.beginPath(); ctx.ellipse(w * 0.88, h * 0.62, w * 0.06, h * 0.08, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(w * 0.95, h * 0.73, w * 0.05, h * 0.07, 0.3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#8e3b2a'; ctx.fillRect(w * 0.15, h * 0.86, w * 0.32, h * 0.06);
+    ctx.fillStyle = '#2d5a3a'; ctx.beginPath(); ctx.moveTo(w * 0.9, h * 0.3); ctx.lineTo(w * 0.96, h * 0.3); ctx.lineTo(w * 0.98, h * 0.4); ctx.lineTo(w * 0.88, h * 0.4); ctx.closePath(); ctx.fill();
+    ctx.fillRect(w * 0.927, h * 0.4, 6, h * 0.18);
+  }
+
+  function canvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+
+  function show(before, after, ratio, isDemoAfter) {
+    beforeURL = before;
+    imgBefore.src = before; imgAfter.src = after;
+    stage.style.aspectRatio = ratio;
+    stage.dataset.mode = 'before';
+    demoBadge.hidden = true; isSample = !isDemoAfter;
+    result.hidden = true; tilesEl.innerHTML = '';
+    truck.style.transform = 'translateX(140%)';
+    go.disabled = false; setStep(1);
+  }
+
+  function loadSample() {
+    const w = 1200, h = 800, a = canvas(w, h), b = canvas(w, h);
+    drawRoom(a.getContext('2d'), w, h, true); drawRoom(b.getContext('2d'), w, h, false);
+    show(a.toDataURL('image/jpeg', .9), b.toDataURL('image/jpeg', .9), '3 / 2', false);
+    hint.textContent = "Une pièce d'exemple est chargée : appuyez sur le bouton orange pour voir le camion à l'œuvre.";
+  }
+
+  function loadFile(file) {
+    msg.textContent = '';
+    if (!consent.checked) { msg.textContent = "Cochez la case d'accord ci-dessus pour utiliser votre photo."; return; }
+    if (!file || !file.type.startsWith('image/')) { msg.textContent = "Ce fichier n'est pas une photo. Choisissez une image (JPG, PNG…)."; return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const w = 1200, r = Math.min(Math.max(img.height / img.width, 0.5), 1.0), h = Math.round(w * r);
+        const s = Math.max(w / img.width, h / img.height), dw = img.width * s, dh = img.height * s;
+        const a = canvas(w, h), ac = a.getContext('2d');
+        ac.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
+        const url = a.toDataURL('image/jpeg', .88);
+        show(url, url, w + ' / ' + h, true);
+        hint.textContent = 'Votre photo est prête : appuyez sur le bouton orange.';
+      };
+      img.onerror = () => { msg.textContent = "Impossible de lire cette photo. Essayez avec une autre image."; };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  /* ---------- Appel à l'IA ---------- */
+  async function askAI() {
+    if (!API) throw new Error("Le simulateur n'est pas encore relié à l'intelligence artificielle.");
+    const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: beforeURL.split(',')[1], mime: 'image/jpeg' }) });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || !data.image) throw new Error(data.erreur || "La transformation n'a pas fonctionné. Réessayez dans un instant.");
+    const url = 'data:' + (data.mime || 'image/png') + ';base64,' + data.image;
+    await new Promise((ok, ko) => { imgAfter.onload = ok; imgAfter.onerror = () => ko(new Error("Image reçue illisible.")); imgAfter.src = url; });
+  }
+
+  function fail(err) {
+    stage.classList.remove('waiting');
+    tilesEl.innerHTML = ''; demoBadge.hidden = true;
+    truck.getAnimations().forEach(a => a.cancel()); truck.style.transform = 'translateX(140%)';
+    stage.dataset.mode = 'before'; setStep(1);
+    running = false; go.disabled = false;
+    msg.textContent = err.message || String(err);
+  }
+
+  /* ---------- Animation du camion ---------- */
+  const wait = (ms) => new Promise(r => setTimeout(r, ms));
+  function anim(el, frames, opts) { return el.animate(frames, Object.assign({ fill: 'forwards' }, opts)).finished; }
+
+  function toCompare() {
+    stage.classList.remove('waiting');
+    tilesEl.innerHTML = '';
+    stage.dataset.mode = 'compare';
+    slider.value = 50; stage.style.setProperty('--x', '50%');
+    demoBadge.hidden = true;
+    result.hidden = false; setStep(3);
+    running = false; go.disabled = false;
+    go.textContent = '🚚 Rejouer le passage du camion';
+    hint.textContent = 'Faites glisser la photo pour comparer, ou déposez une autre photo.';
+  }
+
+  async function run() {
+    if (running) return;
+    running = true; go.disabled = true; result.hidden = true; demoBadge.hidden = true; msg.textContent = ''; setStep(2);
+    stage.classList.toggle('waiting', !isSample);
+    aiJob = isSample ? Promise.resolve() : askAI();
+    let failed = false;
+    aiJob.catch((e) => { failed = true; fail(e); });
+    if (reduce) {
+      demoBadge.hidden = isSample;
+      try { await aiJob; } catch (e) { return; }
+      toCompare(); return;
+    }
+
+    const cols = 4, rows = 3, rect = stage.getBoundingClientRect();
+    tilesEl.innerHTML = '';
+    const tiles = [];
+    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+      const t = document.createElement('div');
+      t.className = 'tile';
+      Object.assign(t.style, {
+        left: (i * 100 / cols) + '%', top: (j * 100 / rows) + '%',
+        width: (100 / cols + 0.2) + '%', height: (100 / rows + 0.2) + '%',
+        backgroundImage: `url(${beforeURL})`, backgroundSize: `${cols * 100}% ${rows * 100}%`,
+        backgroundPosition: `${i / (cols - 1) * 100}% ${j / (rows - 1) * 100}%`
+      });
+      tilesEl.appendChild(t); tiles.push(t);
+    }
+    stage.dataset.mode = 'run';
+
+    truck.getAnimations().forEach(a => a.cancel());
+    await anim(truck, [{ transform: 'translateX(140%)' }, { transform: 'translateX(0)' }], { duration: 1000, easing: 'cubic-bezier(.2,.8,.3,1)' }).catch(() => {});
+    if (failed) return;
+
+    const tr = truck.getBoundingClientRect();
+    const tx = tr.left - rect.left + tr.width * (208 / 316), ty = tr.top - rect.top + tr.height * (60 / 162);
+    const order = tiles.map((t, k) => k).sort(() => Math.random() - 0.5);
+    const flights = order.map((k, n) => {
+      const t = tiles[k], b = t.getBoundingClientRect();
+      const dx = tx - (b.left - rect.left + b.width / 2), dy = ty - (b.top - rect.top + b.height / 2);
+      const rot = (Math.random() * 60 - 30).toFixed(0);
+      return anim(t, [
+        { transform: 'translate(0,0) scale(1) rotate(0deg)', opacity: 1 },
+        { transform: `translate(${dx * 0.45}px, ${dy * 0.45 - 60}px) scale(.55) rotate(${rot / 2}deg)`, opacity: 1, offset: .5 },
+        { transform: `translate(${dx}px, ${dy}px) scale(.05) rotate(${rot}deg)`, opacity: .6 }
+      ], { duration: 750, delay: n * 110, easing: 'ease-in' });
+    });
+    await Promise.all(flights).catch(() => {});
+    if (failed) return;
+    tilesEl.innerHTML = '';
+
+    await anim(truck, [{ transform: 'translateX(0) translateY(0)' }, { transform: 'translateX(0) translateY(4px)' }, { transform: 'translateX(0) translateY(0)' }], { duration: 300 }).catch(() => {});
+    if (failed) return;
+    await wait(150);
+    const off = -(tr.right - rect.left) - 20;
+    await anim(truck, [{ transform: 'translateX(0)' }, { transform: `translateX(${off}px)` }], { duration: 1200, easing: 'cubic-bezier(.5,0,.8,.4)' }).catch(() => {});
+    if (failed) return;
+    truck.getAnimations().forEach(a => a.cancel());
+    truck.style.transform = 'translateX(140%)';
+    if (!isSample) demoBadge.hidden = false;
+    try { await aiJob; } catch (e) { return; }
+    await wait(150);
+    toCompare();
+  }
+
+  /* ---------- Événements ---------- */
+  go.addEventListener('click', run);
+  $('#sample').addEventListener('click', () => { if (!running) loadSample(); });
+  slider.addEventListener('input', () => stage.style.setProperty('--x', slider.value + '%'));
+  fileInput.addEventListener('change', () => { if (!running) loadFile(fileInput.files[0]); fileInput.value = ''; });
+  ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e => { if (!running && e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+  consent.addEventListener('change', () => { if (consent.checked) msg.textContent = ''; });
+
+  loadSample();
+})();
+</script>
+</body>
+</html>
