@@ -88,6 +88,7 @@ main { padding-block: clamp(28px, 5vw, 56px); }
 .drop.loaded .ico { background: var(--ochre); }
 @keyframes appel { 0%, 100% { box-shadow: 0 0 0 0 rgba(217, 142, 43, .55); } 50% { box-shadow: 0 0 0 10px rgba(217, 142, 43, 0); } }
 @media (prefers-reduced-motion: reduce) { .drop { animation: none; } }
+.admin-badge { margin: 0; background: var(--green-deep); color: var(--paper); font-size: .9rem; padding: 6px 12px; justify-self: start; }
 .sample-tag { position: absolute; top: 10px; left: 10px; background: var(--ochre); color: #22180c; font-family: var(--f-display); font-weight: 700; font-size: .85rem; padding: 5px 10px; }
 .modal-back { position: fixed; inset: 0; z-index: 50; background: rgba(31, 40, 30, .62); display: grid; place-items: center; padding: 16px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 .modal { background: var(--paper); border: 3px solid var(--green); max-width: 480px; width: 100%; padding: clamp(20px, 4vw, 30px); display: grid; gap: 14px; box-shadow: 0 18px 40px rgba(0, 0, 0, .3); }
@@ -235,6 +236,14 @@ main { padding-block: clamp(28px, 5vw, 56px); }
         demoBadge = $('#demoBadge'), consent = $('#consent'), fileInput = $('#file'), drop = $('#drop'), hint = $('#hint');
   // Adresse de l'intermédiaire Cloudflare (à remplir une fois créé)
   const API = 'https://fancy-night-c1bevidantik-ia.vidantikk.workers.dev/';
+  // Code administrateur : ouvrir une fois la page avec ?code=VOTRECODE, il est retenu sur cet appareil
+  let adminCode = '';
+  try {
+    const q = new URLSearchParams(location.search).get('code');
+    if (q === 'oublier') localStorage.removeItem('vidantik-admin');
+    else if (q) localStorage.setItem('vidantik-admin', q);
+    adminCode = localStorage.getItem('vidantik-admin') || '';
+  } catch (e) { adminCode = new URLSearchParams(location.search).get('code') || ''; }
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let beforeURL = '', running = false, isSample = true, aiJob = null;
 
@@ -333,7 +342,7 @@ main { padding-block: clamp(28px, 5vw, 56px); }
   async function askAI() {
     if (!API) throw new Error("Le simulateur n'est pas encore relié à l'intelligence artificielle.");
     const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: beforeURL.split(',')[1], mime: 'image/jpeg' }) });
+      body: JSON.stringify({ image: beforeURL.split(',')[1], mime: 'image/jpeg', code: adminCode || undefined }) });
     const data = await r.json().catch(() => ({}));
     if (!r.ok || !data.image) throw new Error(data.erreur || "La transformation n'a pas fonctionné. Réessayez dans un instant.");
     const url = 'data:' + (data.mime || 'image/png') + ';base64,' + data.image;
@@ -450,6 +459,12 @@ main { padding-block: clamp(28px, 5vw, 56px); }
   modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.hidden) closeModal(); });
 
+  if (adminCode) {
+    const b = document.createElement('p');
+    b.className = 'admin-badge';
+    b.textContent = 'Mode patron : simulations illimitées sur cet appareil';
+    document.querySelector('.atelier').prepend(b);
+  }
   loadSample();
 })();
 </script>
