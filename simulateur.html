@@ -98,6 +98,10 @@ main { padding-block: clamp(28px, 5vw, 56px); }
 .modal .modal-consent { color: var(--ink); background: var(--cream); border-left: 4px solid var(--ochre); padding: 12px 14px; }
 .modal .modal-consent a { color: var(--green); font-weight: 600; }
 .modal .actions { display: grid; gap: 10px; }
+.modal { position: relative; }
+.modal-close { position: absolute; top: 8px; right: 8px; width: 40px; height: 40px; border: 0; background: transparent; color: var(--green); font-size: 1.6rem; line-height: 1; cursor: pointer; }
+.devis-img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border: 2px solid var(--green); display: block; }
+.modal .btn { text-align: center; }
 .drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .consent { display: flex; gap: 10px; align-items: flex-start; font-size: .92rem; color: var(--muted); margin-top: 10px; }
 .consent input { margin-top: 5px; accent-color: var(--green); }
@@ -225,6 +229,20 @@ main { padding-block: clamp(28px, 5vw, 56px); }
   </div>
 </div>
 
+<div class="modal-back" id="devisModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="devisTitle">
+    <button class="modal-close" id="devisClose" type="button" aria-label="Fermer">×</button>
+    <h2 id="devisTitle">Envie du même résultat chez vous ?</h2>
+    <img class="devis-img" id="devisImg" alt="Votre pièce après débarras (simulation)">
+    <p>Vid'Antik vide, trie et nettoie votre pièce, avec discrétion et respect de vos biens. Le devis est <b>gratuit</b>, établi sur place et <b>sans engagement</b>.</p>
+    <div class="actions">
+      <a class="btn btn-ochre" href="./#contact" id="devisGo">Je veux ce résultat : devis gratuit</a>
+      <a class="btn btn-green" href="tel:+33744433539">📞 Appeler le 07 44 43 35 39</a>
+      <button class="btn btn-line" id="devisLater" type="button">Plus tard, je regarde encore</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-back" id="errModal" hidden>
   <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="errTitle">
     <h2 id="errTitle">Le camion n'a pas pu terminer</h2>
@@ -305,6 +323,8 @@ main { padding-block: clamp(28px, 5vw, 56px); }
   function canvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
 
   function show(before, after, ratio, isDemoAfter) {
+    if (typeof devisTimer !== 'undefined') { clearTimeout(devisTimer); }
+    $('#devisModal').hidden = true;
     beforeURL = before;
     imgBefore.src = before; imgAfter.src = after;
     stage.style.aspectRatio = ratio;
@@ -389,7 +409,14 @@ main { padding-block: clamp(28px, 5vw, 56px); }
     return Promise.race([a.finished, wait(max)]);
   }
 
+  let devisTimer = null;
   function toCompare() {
+    clearTimeout(devisTimer);
+    devisTimer = setTimeout(() => {
+      if (stage.dataset.mode !== 'compare' || !$('#modal').hidden || !$('#errModal').hidden) return;
+      $('#devisImg').src = imgAfter.src;
+      $('#devisModal').hidden = false; $('#devisGo').focus();
+    }, 5000);
     if (!isSample) imgAfter.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 500 });
     stage.classList.remove('waiting');
     tilesEl.innerHTML = '';
@@ -405,6 +432,7 @@ main { padding-block: clamp(28px, 5vw, 56px); }
   async function run() {
     if (running) return;
     if (!isSample && !consent.checked) { openModal(); return; }
+    clearTimeout(devisTimer); $('#devisModal').hidden = true;
     running = true; go.disabled = true; result.hidden = true; demoBadge.hidden = true; msg.textContent = ''; setStep(2);
     $('#sampleTag').hidden = true;
     stage.classList.toggle('waiting', !isSample);
@@ -486,6 +514,11 @@ main { padding-block: clamp(28px, 5vw, 56px); }
   function closeModal() { modal.hidden = true; go.focus(); }
   $('#modalOk').addEventListener('click', () => { consent.checked = true; modal.hidden = true; run(); });
   $('#modalNo').addEventListener('click', closeModal);
+  const closeDevis = () => { $('#devisModal').hidden = true; };
+  $('#devisClose').addEventListener('click', closeDevis);
+  $('#devisLater').addEventListener('click', closeDevis);
+  $('#devisModal').addEventListener('click', (e) => { if (e.target.id === 'devisModal') closeDevis(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDevis(); });
   $('#errOk').addEventListener('click', () => { $('#errModal').hidden = true; go.focus(); });
   modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.hidden) closeModal(); });
