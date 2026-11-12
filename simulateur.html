@@ -216,7 +216,7 @@ main { padding-block: clamp(28px, 5vw, 56px); }
           <p class="w-rule">Débarras &amp; nettoyage spécialisé</p>
           <p class="w-tag">On fait place nette, vous retrouvez la sérénité !</p>
           <p class="w-sig"><b>Valentin Santailler</b> · Saint-Germain-Nuelles (69210) · 07 44 43 35 39</p>
-          <p class="w-load"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>Le camion range tout, votre pièce vidée arrive…</p>
+          <p class="w-load"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>Le camion Vid'Antik est en route, votre pièce vidée se prépare…</p>
           <span class="w-recycle" aria-hidden="true">&#x267B;&#xFE0E;</span>
         </div></div>
         <canvas class="dust" id="dust" aria-hidden="true"></canvas>
@@ -436,7 +436,7 @@ main { padding-block: clamp(28px, 5vw, 56px); }
     adminCode = localStorage.getItem('vidantik-admin') || '';
   } catch (e) { adminCode = new URLSearchParams(location.search).get('code') || ''; }
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let beforeURL = '', running = false, isSample = true, aiJob = null;
+  let beforeURL = '', running = false, isSample = true, aiJob = null, aiDoneFor = '';
 
   function setStep(n) {
     document.querySelectorAll('#steps li').forEach(li => li.classList.toggle('on', Number(li.dataset.step) <= n));
@@ -613,7 +613,7 @@ main { padding-block: clamp(28px, 5vw, 56px); }
   function show(before, after, ratio, isDemoAfter) {
     if (typeof devisTimer !== 'undefined') { clearTimeout(devisTimer); }
     $('#devisModal').hidden = true;
-    beforeURL = before;
+    beforeURL = before; aiDoneFor = '';
     imgBefore.src = before; imgAfter.src = after;
     stage.style.aspectRatio = ratio;
     stage.dataset.mode = 'before';
@@ -674,7 +674,7 @@ main { padding-block: clamp(28px, 5vw, 56px); }
       throw err;
     }
     const url = 'data:' + (data.mime || 'image/png') + ';base64,' + data.image;
-    await new Promise((ok, ko) => { imgAfter.onload = ok; imgAfter.onerror = () => ko(new Error("Image reçue illisible.")); imgAfter.src = url; });
+    await new Promise((ok, ko) => { imgAfter.onload = ok; imgAfter.onerror = () => ko(new Error("Image reçue illisible.")); imgAfter.src = url; }); aiDoneFor = beforeURL;
   }
 
   function fail(err) {
@@ -803,7 +803,6 @@ main { padding-block: clamp(28px, 5vw, 56px); }
       $('#devisImg').src = imgAfter.src;
       $('#devisModal').hidden = false; $('#devisGo').focus();
     }, 10000);
-    if (!isSample) imgAfter.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 500 });
     stage.classList.remove('waiting');
     tilesEl.innerHTML = ''; clearFx();
     stage.dataset.mode = 'compare';
@@ -821,14 +820,19 @@ main { padding-block: clamp(28px, 5vw, 56px); }
     clearTimeout(devisTimer); $('#devisModal').hidden = true;
     running = true; go.disabled = true; result.hidden = true; demoBadge.hidden = true; msg.textContent = ''; setStep(2);
     $('#sampleTag').hidden = true;
-    stage.classList.toggle('waiting', !isSample);
-    aiJob = isSample ? Promise.resolve() : askAI();
+    stage.classList.toggle('waiting', !isSample && aiDoneFor !== beforeURL);
+    aiJob = isSample || aiDoneFor === beforeURL ? Promise.resolve() : askAI();
     let failed = false;
     aiJob.catch((e) => { failed = true; fail(e); });
     if (reduce) {
       demoBadge.hidden = isSample;
       try { await aiJob; } catch (e) { return; }
       toCompare(); return;
+    }
+    // Vraie photo : écran d'attente pendant que l'IA prépare la pièce vidée, puis la même mise en scène que l'exemple
+    if (!isSample) {
+      try { await aiJob; } catch (e) { return; }
+      stage.classList.remove('waiting');
     }
 
     const cols = 4, rows = 3, rect = stage.getBoundingClientRect();
