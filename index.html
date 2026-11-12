@@ -78,12 +78,20 @@ section[id] { scroll-margin-top: 64px; }
 
 /* Barre du haut */
 .topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; background: var(--green-deep); color: var(--paper); }
-.topbar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 12px; }
+.topbar .wrap { max-width: 1240px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 12px; }
 .logo { font-family: var(--f-display); font-weight: 700; font-size: 1.5rem; letter-spacing: .03em; text-decoration: none; }
-.nav { display: flex; gap: 22px; align-items: center; font-size: 1rem; }
+.nav { display: flex; gap: 14px; align-items: center; font-size: .95rem; }
 .nav a { text-decoration: none; opacity: .88; white-space: nowrap; }
 .nav a:hover { opacity: 1; text-decoration: underline; text-underline-offset: 4px; }
-.nav a.nav-sim { opacity: 1; color: #f3b866; font-weight: 600; }
+/* Lien Simulateur : cadre doré, point qui pulse et reflet qui traverse le texte */
+.nav a.nav-sim { opacity: 1; display: inline-flex; align-items: center; gap: 9px; padding: 6px 13px; border: 1.5px solid #f3b866; font-family: var(--f-display); font-weight: 700; font-size: .95rem; letter-spacing: .02em; color: #f3b866; text-decoration: none; transition: background .2s ease; }
+.nav a.nav-sim:hover { background: rgba(243, 184, 102, .14); text-decoration: none; }
+.nav-sim-dot { position: relative; flex: none; width: 8px; height: 8px; border-radius: 50%; background: #f4a62a; }
+.nav-sim-dot::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: #f4a62a; animation: nav-sim-ping 1.8s cubic-bezier(0, 0, .2, 1) infinite; }
+@keyframes nav-sim-ping { 0% { transform: scale(1); opacity: .75; } 80%, 100% { transform: scale(3); opacity: 0; } }
+.nav-sim-text { background: linear-gradient(100deg, #f3b866 0%, #f3b866 40%, #fff7e0 50%, #f3b866 60%, #f3b866 100%); background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: nav-sim-shine 3.2s ease-in-out infinite; }
+@keyframes nav-sim-shine { 0% { background-position: 100% 0; } 60%, 100% { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .nav-sim-dot::after, .nav-sim-text { animation: none; } }
 .sim-promo { background: var(--green-deep); color: var(--paper); }
 .sim-grid { display: grid; grid-template-columns: 1fr 1.1fr; gap: clamp(20px, 4vw, 48px); align-items: center; padding-block: clamp(32px, 5vw, 56px); }
 .sim-text { display: grid; gap: 14px; justify-items: start; min-width: 0; }
@@ -142,13 +150,14 @@ section[id] { scroll-margin-top: 64px; }
 .menu-btn { display: none; align-items: center; gap: 8px; font: inherit; font-family: var(--f-display); font-weight: 700; font-size: 1rem; color: var(--paper); background: transparent; border: 2px solid color-mix(in srgb, var(--paper) 55%, transparent); padding: 8px 14px; cursor: pointer; }
 .menu-btn svg { width: 20px; height: 20px; }
 .callbar { display: none; }
-@media (max-width: 1160px) {
+@media (max-width: 1279px) {
   .topbar .wrap { flex-wrap: wrap; row-gap: 0; }
   .menu-btn { display: inline-flex; }
   .nav { display: none; order: 3; width: 100%; flex-direction: column; align-items: stretch; gap: 0; padding-top: 8px; }
   .nav.open { display: flex; }
   .nav a, .nav a:not(.btn) { display: block; padding: 14px 4px; font-size: 1.15rem; opacity: 1; border-top: 1px solid color-mix(in srgb, var(--paper) 18%, transparent); }
   .nav .btn { display: none; }
+  .nav a.nav-sim { display: flex; border: 0; border-top: 1px solid color-mix(in srgb, var(--paper) 18%, transparent); padding: 14px 4px; font-size: 1.15rem; }
   .callbar { display: grid; grid-template-columns: 1fr 1fr; position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--green-deep); padding: 8px var(--gutter-r) calc(8px + env(safe-area-inset-bottom, 0px)) var(--gutter-l); gap: 8px; box-shadow: 0 -4px 14px rgba(0, 0, 0, .18); }
   .callbar .btn { padding: 12px 8px; font-size: 1.05rem; }
   .callbar .btn-line { color: var(--paper); border-color: var(--paper); }
@@ -398,7 +407,7 @@ textarea { min-height: 120px; resize: vertical; }
       <a href="#apropos">À propos</a>
       <a href="#faq">FAQ</a>
       <a href="#assistant" class="chat-open">Une question ?</a>
-      <a href="simulateur.html" class="nav-sim">📸 Simulateur photo</a>
+      <a href="simulateur.html" class="nav-sim"><span class="nav-sim-dot" aria-hidden="true"></span><span class="nav-sim-text">Simulateur photo</span></a>
       <a class="btn btn-ochre btn-sm" href="#contact">Devis gratuit</a>
     </nav>
   </div>
