@@ -166,7 +166,7 @@ main { padding-block: clamp(28px, 5vw, 56px); }
     <div class="intro">
       <span class="kicker">Simulateur</span>
       <h1>Voyez votre pièce après notre passage</h1>
-      <p>Déposez une photo de la pièce encombrée, appelez le camion Vid'Antik, et découvrez à quoi elle ressemblera une fois vidée et nettoyée.</p>
+      <p>Déposez une photo de la pièce encombrée, appuyez sur « Voir ma pièce vidée » et découvrez à quoi elle ressemblera une fois vidée et nettoyée.</p>
       <p class="proto">L'image « après » est créée par intelligence artificielle : c'est une simulation pour vous aider à vous projeter. Le résultat réel de notre intervention peut différer.</p>
     </div>
 
@@ -227,7 +227,7 @@ main { padding-block: clamp(28px, 5vw, 56px); }
           <p class="msg" id="msg" role="status"></p>
         </div>
         <div class="side">
-          <button class="btn btn-ochre" id="go" type="button">🚚 Appeler le camion Vid'Antik</button>
+          <button class="btn btn-ochre" id="go" type="button">Voir ma pièce vidée</button>
           <button class="btn btn-line" id="sample" type="button">Reprendre la photo d'exemple</button>
           <p class="hint" id="hint">Une pièce d'exemple est déjà chargée : appuyez sur le bouton orange pour voir le camion à l'œuvre.</p>
         </div>
@@ -248,11 +248,11 @@ main { padding-block: clamp(28px, 5vw, 56px); }
 
 <div class="modal-back" id="modal" hidden>
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-    <h2 id="modalTitle">Une dernière chose avant d'appeler le camion</h2>
+    <h2 id="modalTitle">Une dernière chose avant de voir votre pièce vidée</h2>
     <p>Pour transformer votre photo, nous avons besoin de votre accord :</p>
     <p class="modal-consent">J'accepte que ma photo soit transmise à notre service d'intelligence artificielle (Google) uniquement pour réaliser cette simulation. Vid'Antik ne la conserve pas. <a href="mentions-legales.html#confidentialite" target="_blank" rel="noopener">En savoir plus</a></p>
     <div class="actions">
-      <button class="btn btn-ochre" id="modalOk" type="button">J'accepte et j'appelle le camion 🚚</button>
+      <button class="btn btn-ochre" id="modalOk" type="button">J'accepte et je vois ma pièce vidée</button>
       <button class="btn btn-line" id="modalNo" type="button">Annuler</button>
     </div>
   </div>
@@ -362,7 +362,7 @@ main { padding-block: clamp(28px, 5vw, 56px); }
     $('#sampleTag').hidden = !isSample;
     drop.classList.toggle('loaded', !isSample);
     $('#dropTitle').textContent = isSample ? 'Déposez la photo de votre pièce encombrée' : 'Votre photo est prête !';
-    $('#dropText').textContent = isSample ? 'Salon, cave, grenier, garage… Prenez-la en photo ou choisissez-en une dans votre téléphone ou votre ordinateur.' : 'Appuyez maintenant sur le bouton orange « Appeler le camion Vid\'Antik », juste en dessous.';
+    $('#dropText').textContent = isSample ? 'Salon, cave, grenier, garage… Prenez-la en photo ou choisissez-en une dans votre téléphone ou votre ordinateur.' : 'Appuyez maintenant sur le bouton orange « Voir ma pièce vidée », juste en dessous.';
     $('#dropPick').textContent = isSample ? 'Choisir ma photo' : 'Changer de photo';
     result.hidden = true; tilesEl.innerHTML = '';
     truck.style.transform = 'translateX(140%)';
@@ -454,7 +454,7 @@ main { padding-block: clamp(28px, 5vw, 56px); }
     demoBadge.hidden = true;
     result.hidden = false; setStep(3);
     running = false; go.disabled = false;
-    go.textContent = '🚚 Rejouer le passage du camion';
+    go.textContent = 'Revoir le passage du camion';
     hint.textContent = 'Faites glisser la photo pour comparer, ou déposez une autre photo.';
   }
 
