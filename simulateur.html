@@ -131,6 +131,18 @@ main { padding-block: clamp(28px, 5vw, 56px); }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 .btn-ochre { background: var(--ochre); border-color: var(--ochre); color: #22180c; font-size: 1.1rem; padding: 16px 22px; }
 .btn-ochre:not(:disabled):hover { filter: brightness(1.06); }
+/* Bouton principal « Voir ma pièce vidée » : gros, qui pulse, avec un reflet et une flèche qui avance */
+#go { position: relative; overflow: hidden; isolation: isolate; width: 100%; font-size: clamp(1.1rem, 3.2vw, 1.35rem); letter-spacing: .04em; text-transform: uppercase; padding: 20px 22px; background: #f4a62a; border: 3px solid var(--green-deep); color: #1f1404; box-shadow: 0 6px 0 #8a5a1a; animation: go-pulse 1.6s ease-in-out infinite; }
+#go::after { content: "→"; display: inline-block; margin-left: 4px; animation: go-nudge 1s ease-in-out infinite; }
+#go::before { content: ""; position: absolute; z-index: -1; top: 0; bottom: 0; left: -60%; width: 40%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .65), transparent); transform: skewX(-20deg); animation: go-shine 2.6s ease-in-out infinite; }
+#go:not(:disabled):hover { background: #ffb840; filter: none; }
+#go:not(:disabled):active { transform: translateY(4px); box-shadow: 0 2px 0 #8a5a1a; }
+#go:disabled, #go:disabled::before, #go:disabled::after { animation: none; }
+#go:disabled::before { display: none; }
+@keyframes go-pulse { 0%, 100% { transform: scale(1); box-shadow: 0 6px 0 #8a5a1a, 0 0 0 0 rgba(244, 166, 42, .75); } 50% { transform: scale(1.04); box-shadow: 0 6px 0 #8a5a1a, 0 0 0 18px rgba(244, 166, 42, 0); } }
+@keyframes go-nudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(7px); } }
+@keyframes go-shine { 0% { left: -60%; } 55%, 100% { left: 130%; } }
+@media (prefers-reduced-motion: reduce) { #go, #go::before, #go::after { animation: none; } }
 .btn-green { background: var(--green); color: var(--paper); }
 .btn-green:hover { background: var(--green-deep); }
 .btn-line:hover { background: var(--green); color: var(--paper); }
