@@ -84,8 +84,17 @@ main { padding-block: clamp(28px, 5vw, 56px); }
 @container (max-width: 380px) { .wait-card .w-tag, .wait-card .w-sig { display: none; } }
 .tiles { position: absolute; inset: 0; pointer-events: none; }
 .tile { position: absolute; background-repeat: no-repeat; will-change: transform; }
-.truck { position: absolute; right: 3%; bottom: 3%; width: 38%; transform: translateX(140%); pointer-events: none; filter: drop-shadow(0 6px 6px rgba(0,0,0,.25)); }
-.truck svg { display: block; width: 100%; height: auto; }
+/* Nettoyage final : poussière, coup de balai, reflet et étincelles */
+.dust { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
+.stage[data-mode="run"] .dust.on { display: block; }
+.stage.waiting .dust { visibility: hidden; }
+.fx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.fx .broom { position: absolute; bottom: 3%; height: 50%; width: auto; transform-origin: 50% 100%; filter: drop-shadow(0 4px 4px rgba(0, 0, 0, .3)); }
+.fx .puff { position: absolute; width: 4cqw; height: 4cqw; border-radius: 50%; background: radial-gradient(circle, rgba(150, 130, 100, .55), rgba(150, 130, 100, 0) 70%); transform: translate(-50%, -50%); }
+.fx .shine { position: absolute; top: -10%; bottom: -10%; width: 40%; left: -45%; background: linear-gradient(105deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .55) 50%, rgba(255, 255, 255, 0)); }
+.fx .spark { position: absolute; width: 7cqw; height: 7cqw; transform: translate(-50%, -50%) scale(0); filter: drop-shadow(0 0 6px rgba(255, 214, 120, .95)); }
+.truck { position: absolute; right: 7%; bottom: 3%; width: 38%; transform: translateX(140%); pointer-events: none; filter: drop-shadow(0 6px 6px rgba(0,0,0,.25)); }
+.truck svg { display: block; width: 100%; height: auto; overflow: visible; }
 .tag { position: absolute; top: 10px; font-family: var(--f-display); font-weight: 700; font-size: .8rem; letter-spacing: .1em; text-transform: uppercase; padding: 4px 10px; background: var(--green-deep); color: var(--paper); display: none; }
 .tag-before { left: 10px; } .tag-after { right: 10px; background: var(--ochre); color: #22180c; }
 .stage[data-mode="compare"] .tag { display: block; }
@@ -210,23 +219,136 @@ main { padding-block: clamp(28px, 5vw, 56px); }
           <p class="w-load"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>Le camion range tout, votre pièce vidée arrive…</p>
           <span class="w-recycle" aria-hidden="true">&#x267B;&#xFE0E;</span>
         </div></div>
+        <canvas class="dust" id="dust" aria-hidden="true"></canvas>
         <div class="tiles" id="tiles"></div>
         <div class="truck" id="truck" aria-hidden="true">
-          <svg viewBox="0 0 316 162">
-            <rect x="108" y="18" width="200" height="112" rx="4" fill="var(--green)" stroke="var(--green-deep)" stroke-width="4"/>
-            <rect x="108" y="104" width="200" height="9" fill="var(--ochre)"/>
-            <text x="208" y="70" text-anchor="middle" fill="var(--paper)" font-family="Libre Caslon Text, Georgia, serif" font-weight="700" font-size="27" letter-spacing="1">VID'ANTIK</text>
-            <text x="208" y="93" text-anchor="middle" fill="var(--paper)" font-family="Source Serif 4, Georgia, serif" font-size="13">Débarras &amp; nettoyage</text>
-            <path d="M108 46 H54 L14 90 V130 H108 Z" fill="var(--green)" stroke="var(--green-deep)" stroke-width="4" stroke-linejoin="round"/>
-            <path d="M98 56 H60 L30 88 H98 Z" fill="var(--sky)" stroke="var(--green-deep)" stroke-width="3"/>
-            <rect x="4" y="116" width="22" height="10" fill="var(--ochre)"/>
-            <circle cx="70" cy="136" r="22" fill="var(--ink)"/><circle cx="70" cy="136" r="9" fill="var(--line)"/>
-            <circle cx="252" cy="136" r="22" fill="var(--ink)"/><circle cx="252" cy="136" r="9" fill="var(--line)"/>
-          </svg>
+<svg viewBox="0 0 316 162">
+  <defs>
+    <linearGradient id="vm-body" gradientUnits="userSpaceOnUse" x1="0" y1="17" x2="0" y2="138">
+      <stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#f3f4f5"/><stop offset="1" stop-color="#d9dcdf"/>
+    </linearGradient>
+    <linearGradient id="vm-glass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4a5a66"/><stop offset=".5" stop-color="#2b3740"/><stop offset="1" stop-color="#1c252c"/>
+    </linearGradient>
+    <linearGradient id="vm-rim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e6e8ea"/><stop offset="1" stop-color="#9aa0a6"/>
+    </linearGradient>
+    <radialGradient id="vm-shadow" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#000" stop-opacity=".35"/><stop offset="1" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+    <g id="vm-wheel">
+      <circle r="19" fill="#1d1d1d"/>
+      <circle r="17" fill="none" stroke="#2e2e2e" stroke-width="1.5"/>
+      <circle r="11.5" fill="url(#vm-rim)" stroke="#6b7177" stroke-width="1"/>
+      <g stroke="#7d848a" stroke-width="2.2" stroke-linecap="round">
+        <path d="M0 -4 V-10"/><path d="M3.8 -1.2 L9.5 -3.1"/><path d="M2.4 3.2 L5.9 8.1"/><path d="M-2.4 3.2 L-5.9 8.1"/><path d="M-3.8 -1.2 L-9.5 -3.1"/>
+      </g>
+      <circle r="4" fill="#bfc4c8" stroke="#6b7177" stroke-width="1"/>
+    </g>
+    <pattern id="vm-plaid" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="4" height="4" fill="#f4f1e6"/><rect width="2" height="4" fill="#2d5a3a" opacity=".55"/><rect width="4" height="2" fill="#2d5a3a" opacity=".55"/><path d="M3 0V4M0 3H4" stroke="#1f4029" stroke-width=".3" opacity=".5"/></pattern>
+    <clipPath id="vm-cab"><path d="M62 82 Q70 56 82 37 Q85 32 92 32 L120 31 L120 78 L66 82 Z"/></clipPath>
+  </defs>
+
+  <ellipse cx="158" cy="152" rx="156" ry="7" fill="url(#vm-shadow)"/>
+
+  <!-- passages de roue (intérieur sombre) -->
+  <circle cx="58" cy="133" r="23" fill="#111"/>
+  <circle cx="248" cy="133" r="23" fill="#111"/>
+
+  <!-- carrosserie -->
+  <path d="M10 138 L6 129 L5 112 Q6 102 15 98 L42 89 Q51 62 68 36 Q74 21 90 18 L298 18 Q308 18 309 28 L310 131 Q310 138 303 138 L274 138 A26 26 0 0 0 222 138 L84 138 A26 26 0 0 0 32 138 Z"
+        fill="url(#vm-body)" stroke="#8d949a" stroke-width="1.6" stroke-linejoin="round"/>
+
+  <!-- reflet sur le toit -->
+  <path d="M92 21 L296 21" stroke="#fff" stroke-width="2" opacity=".9"/>
+
+  <!-- protections noires bas de caisse -->
+  <path d="M84 138 L84 130 L222 130 L222 138 Z" fill="#3a3d40"/>
+  <path d="M274 138 L274 130 L310 130 L310 131 Q310 138 303 138 Z" fill="#3a3d40"/>
+  <path d="M32 138 L32 132 L10 132 L10 138 Z" fill="#3a3d40"/>
+  <!-- pare-chocs avant -->
+  <path d="M5 114 L5 129 L10 138 L32 138 Q30 126 22 120 L22 114 Z" fill="#45494d"/>
+  <path d="M6 121 L20 121" stroke="#2a2d30" stroke-width="2"/>
+  <!-- calandre -->
+  <path d="M6 104 Q7 100 13 99 L13 112 L6 112 Z" fill="#26292c"/>
+  <!-- phare -->
+  <path d="M13 99 L33 92 Q35 96 31 99 L15 104 Z" fill="#e9eef2" stroke="#7d848a" stroke-width="1"/>
+  <path d="M16 100 L30 95.5" stroke="#f6b13a" stroke-width="1.6"/>
+  <!-- feu arrière -->
+  <rect x="305" y="86" width="5" height="26" rx="1.5" fill="#c4362c"/>
+  <rect x="305" y="104" width="5" height="6" fill="#f2a33a"/>
+
+  <!-- vitres de cabine -->
+  <path d="M47 86 Q55 60 69 38 Q73 31 80 30 L84 30 Q70 52 60 84 Z" fill="#1c252c" opacity=".85"/>
+  <path d="M62 82 Q70 56 82 37 Q85 32 92 32 L120 31 L120 78 L66 82 Z" fill="url(#vm-glass)" stroke="#2a2d30" stroke-width="1.2"/>
+  <!-- conducteur : chemise à carreaux verte et blanche, casquette Vid'Antik, vu de profil -->
+  <g clip-path="url(#vm-cab)">
+    <path d="M80 76 Q78 70 84 68" stroke="#1d1d1d" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    <path d="M88 84 Q88 69 96 66 L109 66 Q116 68 116 84 Z" fill="url(#vm-plaid)" stroke="#1f4029" stroke-width=".5"/>
+    <path d="M96 70 Q90 72 85.5 70" stroke="url(#vm-plaid)" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+    <circle cx="84" cy="70" r="2.2" fill="#dcaa84"/>
+    <rect x="101" y="58" width="6.5" height="9" fill="#d9a67f"/>
+    <path d="M99.5 65.6 L102.6 70 L104.4 66.6 Z M104.4 66.6 L106.6 70 L109.2 65.8 Z" fill="#f4f1e6" stroke="#1f4029" stroke-width=".4" stroke-linejoin="round"/>
+    <path d="M110 46 Q111.6 52 109.2 57 Q107 61 102 61.5 Q98 61.8 96 59.5 L95 57.6 Q94.1 57.1 94.4 56.1 L92.7 54.7 Q92.3 53.9 93.4 53.3 L94.2 51.6 Q93.6 49 94 46 Z" fill="#e2b791"/>
+    <path d="M109.2 57 Q107 61 102 61.5 Q104.5 59.5 106 56 Z" fill="#cf9c76" opacity=".7"/>
+    <ellipse cx="105.2" cy="53" rx="1.6" ry="2.4" fill="#d39d77"/>
+    <path d="M105.6 51.6 Q104.6 53 105.6 54.4" stroke="#b9805c" stroke-width=".4" fill="none"/>
+    <path d="M95.8 49.5 Q97.3 48.9 98.7 49.5" stroke="#5a3a22" stroke-width=".6" fill="none" stroke-linecap="round"/>
+    <ellipse cx="97.2" cy="51.3" rx=".7" ry=".8" fill="#2c2a24"/>
+    <path d="M95.1 58.1 Q95.9 58.5 96.8 58.1" stroke="#a8694d" stroke-width=".5" fill="none" stroke-linecap="round"/>
+    <path d="M93.5 47 Q93 40 102 38.5 Q111 39 111.4 47 Z" fill="#2d5a3a"/>
+    <path d="M94.5 46.6 L85 48.6 Q85 50.4 88 50.2 L95 49 Z" fill="#1f4029"/>
+    <path d="M93.5 46.8 H111.4" stroke="#d98e2b" stroke-width="1"/>
+    <text x="102.6" y="44.6" text-anchor="middle" textLength="13" lengthAdjust="spacingAndGlyphs" fill="#fffcf0" font-family="Libre Caslon Text, Georgia, serif" font-weight="700" font-size="3.4">VID'ANTIK</text>
+  </g>
+  <path d="M86 36 L104 35 L82 62 Z" fill="#fff" opacity=".18"/>
+  <!-- rétroviseur -->
+  <path d="M56 72 L48 70 Q44 70 44 75 L45 84 Q46 87 50 86 L56 84 Z" fill="#2a2d30"/>
+
+  <!-- portes -->
+  <path d="M120 28 L120 128 Q104 126 88 116 L84 106" fill="none" stroke="#9aa1a7" stroke-width="1.3"/>
+  <path d="M60 86 L84 106" fill="none" stroke="#9aa1a7" stroke-width="1.3"/>
+  <rect x="104" y="88" width="11" height="3.5" rx="1.5" fill="#3a3d40"/>
+  <!-- intérieur visible quand la porte latérale est ouverte, avec le chargement qui apparaît -->
+  <rect x="132.6" y="26.6" width="73" height="101.4" fill="#26292c"/>
+  <path d="M133 27 H205" stroke="#1a1c1e" stroke-width="3"/>
+  <path d="M133 120 H205 V128 H133 Z" fill="#3a3e42"/>
+  <g class="vm-item" opacity="0"><rect x="136" y="96" width="24" height="24" fill="#c8954f" stroke="#7a5527" stroke-width="1"/><path d="M136 102 H160" stroke="#e8d3a8" stroke-width="2"/></g>
+  <g class="vm-item" opacity="0"><rect x="180" y="74" width="22" height="46" fill="#7a4a2a" stroke="#4a2a16" stroke-width="1"/><path d="M180 89 H202 M180 104 H202" stroke="#4a2a16" stroke-width="1"/><circle cx="191" cy="82" r="1.3" fill="#e1b45a"/><circle cx="191" cy="97" r="1.3" fill="#e1b45a"/><circle cx="191" cy="112" r="1.3" fill="#e1b45a"/></g>
+  <g class="vm-item" opacity="0"><rect x="161" y="102" width="18" height="18" fill="#d6a45e" stroke="#7a5527" stroke-width="1"/><path d="M161 107 H179" stroke="#efdcb4" stroke-width="2"/></g>
+  <g class="vm-item" opacity="0"><rect x="139" y="76" width="19" height="20" fill="#b9823f" stroke="#7a5527" stroke-width="1"/><path d="M139 81 H158" stroke="#e8d3a8" stroke-width="2"/></g>
+  <g class="vm-item" opacity="0"><rect x="162" y="86" width="16" height="16" fill="#c8954f" stroke="#7a5527" stroke-width="1"/><path d="M162 90 H178" stroke="#e8d3a8" stroke-width="2"/></g>
+  <g class="vm-item" opacity="0"><ellipse cx="170" cy="78" rx="9" ry="8" fill="#2b2b2b"/><path d="M166 71 Q170 66 174 71" stroke="#2b2b2b" stroke-width="2" fill="none"/></g>
+  <!-- porte arrière (montant) -->
+  <path d="M300 22 L301 130" stroke="#9aa1a7" stroke-width="1.1"/>
+  <!-- clignotant latéral -->
+  <rect x="70" y="96" width="6" height="2.5" rx="1" fill="#f2a33a"/>
+
+  <!-- flocage Vid'Antik : logo et nom centrés dans le panneau arrière -->
+  <image href="maison.png" x="218" y="55" width="70" height="30.6"/>
+  <text x="253" y="102" text-anchor="middle" textLength="80" lengthAdjust="spacingAndGlyphs" fill="#2d5a3a" font-family="Libre Caslon Text, Georgia, serif" font-weight="700" font-size="19">VID'ANTIK</text>
+  <!-- porte latérale coulissante : elle glisse vers l'arrière le long du rail -->
+  <path d="M206 49 L300 49" stroke="#9aa1a7" stroke-width="1.6"/>
+  <g id="vm-slide">
+    <rect x="132" y="26" width="74" height="102" fill="url(#vm-body)"/>
+    <path d="M132 26 L132 128 M206 26 L206 128" stroke="#9aa1a7" stroke-width="1.3"/>
+    <rect x="136" y="88" width="11" height="3.5" rx="1.5" fill="#3a3d40"/>
+  </g>
+  <!-- porte arrière : vue de profil, elle s'ouvre vers l'extérieur -->
+  <g id="vm-rear" style="transform-box: view-box; transform-origin: 310px 76px; transform: scaleX(0)">
+    <path d="M310 22 L334 26 L334 128 L310 131 Z" fill="#e3e6e9" stroke="#8d949a" stroke-width="1.4" stroke-linejoin="round"/>
+    <rect x="319" y="70" width="3" height="10" rx="1" fill="#3a3d40"/>
+    <rect x="310" y="86" width="4" height="26" fill="#c4362c"/>
+  </g>
+  <!-- roues -->
+  <g class="vm-spin" style="transform-box: view-box; transform-origin: 58px 133px"><use href="#vm-wheel" x="58" y="133"/></g>
+  <g class="vm-spin" style="transform-box: view-box; transform-origin: 248px 133px"><use href="#vm-wheel" x="248" y="133"/></g>
+</svg>
         </div>
         <span class="tag tag-before">Avant</span><span class="tag tag-after">Après</span>
         <div class="divider" aria-hidden="true"></div>
         <input class="slider" id="slider" type="range" min="0" max="100" value="50" aria-label="Glisser pour comparer avant et après">
+        <div class="fx" id="fx" aria-hidden="true"></div>
         <div class="demo-badge" id="demoBadge" hidden>Le camion range tout… La photo de votre pièce vidée arrive dans quelques secondes.</div>
       </div>
 
@@ -322,43 +444,168 @@ main { padding-block: clamp(28px, 5vw, 56px); }
 
   /* ---------- Pièce d'exemple dessinée ---------- */
   function drawRoom(ctx, w, h, clutter) {
-    const fy = h * 0.68;
-    ctx.fillStyle = '#e9dcc0'; ctx.fillRect(0, 0, w, fy);
-    ctx.fillStyle = 'rgba(120,90,50,0.06)'; for (let x = 0; x < w; x += 44) ctx.fillRect(x, 0, 20, fy);
-    ctx.fillStyle = '#b98a5a'; ctx.fillRect(0, fy, w, h - fy);
-    ctx.strokeStyle = 'rgba(80,50,25,0.35)'; ctx.lineWidth = 2;
-    for (let y = fy + 30; y < h; y += 34) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
-    ctx.fillStyle = '#f3ead6'; ctx.fillRect(0, fy - h * 0.02, w, h * 0.025);
-    const wx = w * 0.6, wy = h * 0.12, ww = w * 0.24, wh = h * 0.34;
-    ctx.fillStyle = '#cfe3ea'; ctx.fillRect(wx, wy, ww, wh);
-    ctx.strokeStyle = '#f3ead6'; ctx.lineWidth = 14; ctx.strokeRect(wx, wy, ww, wh);
-    ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(wx + ww / 2, wy); ctx.lineTo(wx + ww / 2, wy + wh); ctx.moveTo(wx, wy + wh / 2); ctx.lineTo(wx + ww, wy + wh / 2); ctx.stroke();
-    ctx.fillStyle = '#8a5a34'; ctx.fillRect(w * 0.06, h * 0.2, w * 0.13, fy - h * 0.2);
-    ctx.fillStyle = '#d98e2b'; ctx.beginPath(); ctx.arc(w * 0.17, h * 0.45, 7, 0, Math.PI * 2); ctx.fill();
-    if (!clutter) {
-      ctx.fillStyle = 'rgba(255,250,225,0.4)'; ctx.beginPath();
-      ctx.moveTo(wx, fy + 10); ctx.lineTo(wx + ww, fy + 10); ctx.lineTo(wx + ww * 1.35, h); ctx.lineTo(wx - ww * 0.25, h); ctx.closePath(); ctx.fill();
-      return;
-    }
-    const box = (x, y, bw, bh, c) => {
-      ctx.fillStyle = c || '#c9995b'; ctx.fillRect(x, y, bw, bh);
-      ctx.strokeStyle = 'rgba(60,35,15,.55)'; ctx.lineWidth = 3; ctx.strokeRect(x, y, bw, bh);
-      ctx.fillStyle = 'rgba(240,225,190,.7)'; ctx.fillRect(x, y + bh * 0.42, bw, bh * 0.12);
+    // Pièce en perspective dessinée sur une base 1200 × 800, mise à l'échelle du canevas
+    ctx.save(); ctx.scale(w / 1200, h / 800);
+    const VX = 600, VY = 330, BL = 150, BR = 1050, BT = 90, BB = 520;
+    const poly = (pts, fill) => { ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); if (fill) { ctx.fillStyle = fill; ctx.fill(); } };
+    const lin = (x0, y0, x1, y1, stops) => { const g = ctx.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; };
+    const shadow = (cx, cy, rx, ry, a) => {
+      const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1); g.addColorStop(0, `rgba(30,18,8,${a || .35})`); g.addColorStop(1, 'rgba(30,18,8,0)');
+      ctx.save(); ctx.translate(cx, cy); ctx.scale(rx, ry); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 1, 0, Math.PI * 2); ctx.fill(); ctx.restore();
     };
-    ctx.fillStyle = '#6e4426'; ctx.fillRect(w * 0.24, h * 0.18, w * 0.17, h * 0.6);
-    ctx.strokeStyle = '#3e2412'; ctx.lineWidth = 4; ctx.strokeRect(w * 0.24, h * 0.18, w * 0.17, h * 0.6);
-    ctx.beginPath(); ctx.moveTo(w * 0.325, h * 0.18); ctx.lineTo(w * 0.325, h * 0.78); ctx.stroke();
-    box(w * 0.02, h * 0.66, w * 0.14, h * 0.18); box(w * 0.04, h * 0.52, w * 0.11, h * 0.14, '#d4a86c'); box(w * 0.05, h * 0.40, w * 0.09, h * 0.12, '#bf8c4f');
-    ctx.fillStyle = '#d98e2b'; ctx.fillRect(w * 0.42, h * 0.42, w * 0.06, h * 0.2); ctx.fillStyle = '#cfe3ea'; ctx.fillRect(w * 0.43, h * 0.44, w * 0.04, h * 0.16);
-    box(w * 0.44, h * 0.62, w * 0.13, h * 0.2); box(w * 0.47, h * 0.5, w * 0.1, h * 0.12, '#d4a86c');
-    ctx.strokeStyle = '#4a2c16'; ctx.lineWidth = 10; ctx.beginPath();
-    ctx.moveTo(w * 0.6, h * 0.58); ctx.lineTo(w * 0.6, h * 0.76); ctx.moveTo(w * 0.68, h * 0.58); ctx.lineTo(w * 0.68, h * 0.76); ctx.moveTo(w * 0.58, h * 0.6); ctx.lineTo(w * 0.7, h * 0.6); ctx.stroke();
-    box(w * 0.74, h * 0.7, w * 0.16, h * 0.2, '#bf8c4f'); box(w * 0.62, h * 0.78, w * 0.12, h * 0.15);
-    ctx.fillStyle = '#3a3a36'; ctx.beginPath(); ctx.ellipse(w * 0.88, h * 0.62, w * 0.06, h * 0.08, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(w * 0.95, h * 0.73, w * 0.05, h * 0.07, 0.3, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#8e3b2a'; ctx.fillRect(w * 0.15, h * 0.86, w * 0.32, h * 0.06);
-    ctx.fillStyle = '#2d5a3a'; ctx.beginPath(); ctx.moveTo(w * 0.9, h * 0.3); ctx.lineTo(w * 0.96, h * 0.3); ctx.lineTo(w * 0.98, h * 0.4); ctx.lineTo(w * 0.88, h * 0.4); ctx.closePath(); ctx.fill();
-    ctx.fillRect(w * 0.927, h * 0.4, 6, h * 0.18);
+
+    // Plafond, murs latéraux, mur du fond
+    poly([[0, 0], [1200, 0], [BR, BT], [BL, BT]], lin(0, 0, 0, BT, [[0, '#e9e4d8'], [1, '#f6f2e8']]));
+    poly([[0, 0], [BL, BT], [BL, BB], [0, 800]], lin(0, 0, BL, 0, [[0, '#cbbd9e'], [1, '#e0d3b7']]));
+    poly([[1200, 0], [BR, BT], [BR, BB], [1200, 800]], lin(1200, 0, BR, 0, [[0, '#d3c6a8'], [1, '#e6dabf']]));
+    poly([[BL, BT], [BR, BT], [BR, BB], [BL, BB]], lin(0, BT, 0, BB, [[0, '#efe5cd'], [1, '#e6d9bb']]));
+    ctx.fillStyle = 'rgba(150,120,80,0.07)';
+    for (let x = BL + 18; x < BR; x += 36) ctx.fillRect(x, BT, 12, BB - BT);
+    ctx.strokeStyle = 'rgba(120,100,70,.25)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(BL, BT); ctx.lineTo(BL, BB); ctx.moveTo(BR, BT); ctx.lineTo(BR, BB); ctx.moveTo(BL, BT); ctx.lineTo(BR, BT); ctx.stroke();
+    // Corniche
+    poly([[0, 0], [1200, 0], [1188, 8], [12, 8]], '#fbf8f0');
+    poly([[BL - 4, BT - 6], [BR + 4, BT - 6], [BR, BT], [BL, BT]], '#fbf8f0');
+
+    // Parquet en perspective
+    poly([[BL, BB], [BR, BB], [1200, 800], [0, 800]], lin(0, BB, 0, 800, [[0, '#a8743f'], [1, '#c08a52']]));
+    ctx.save(); poly([[BL, BB], [BR, BB], [1200, 800], [0, 800]]); ctx.clip();
+    const k = (800 - VY) / (BB - VY);
+    for (let xb = BL - 400; xb <= BR + 400; xb += 30) {
+      ctx.strokeStyle = 'rgba(70,40,15,.35)'; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(xb, BB); ctx.lineTo(VX + (xb - VX) * k, 800); ctx.stroke();
+    }
+    for (let r = 0, y = BB + 8; y < 800; r++, y += 8 + r * 5) {
+      const t = (y - VY) / (BB - VY), step = 30 * t;
+      ctx.strokeStyle = 'rgba(70,40,15,.25)'; ctx.lineWidth = 1.2;
+      for (let x = VX + (BL - 400 - VX) * t + (r % 2) * step * 2.5; x < 1200; x += step * 5) {
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + step, y); ctx.stroke();
+      }
+    }
+    ctx.fillStyle = lin(0, BB, 0, 800, [[0, 'rgba(255,255,255,0)'], [.6, 'rgba(255,240,210,.12)'], [1, 'rgba(0,0,0,.08)']]); ctx.fillRect(0, BB, 1200, 280);
+    ctx.restore();
+    // Plinthes
+    poly([[BL, BB - 14], [BR, BB - 14], [BR, BB], [BL, BB]], '#f7f2e6');
+    poly([[0, 778], [BL, BB - 14], [BL, BB], [0, 800]], '#efe8d8');
+    poly([[1200, 778], [BR, BB - 14], [BR, BB], [1200, 800]], '#efe8d8');
+
+    // Fenêtre avec rideaux sur le mur du fond
+    const wx = 660, wy = 150, ww = 250, wh = 250;
+    ctx.fillStyle = lin(0, wy, 0, wy + wh, [[0, '#a9d3ec'], [.7, '#dceef7'], [1, '#eef5f0']]); ctx.fillRect(wx, wy, ww, wh);
+    poly([[wx, wy + wh * .72], [wx + ww * .35, wy + wh * .58], [wx + ww * .7, wy + wh * .66], [wx + ww, wy + wh * .55], [wx + ww, wy + wh], [wx, wy + wh]], '#9fbf8a');
+    poly([[wx, wy + wh * .82], [wx + ww * .5, wy + wh * .74], [wx + ww, wy + wh * .8], [wx + ww, wy + wh], [wx, wy + wh]], '#7fa66c');
+    ctx.strokeStyle = '#fbf8f0'; ctx.lineWidth = 14; ctx.strokeRect(wx, wy, ww, wh);
+    ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(wx + ww / 2, wy); ctx.lineTo(wx + ww / 2, wy + wh); ctx.moveTo(wx, wy + wh * .45); ctx.lineTo(wx + ww, wy + wh * .45); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.28)'; poly([[wx + 20, wy + 10], [wx + 60, wy + 10], [wx + 20, wy + 70]]); ctx.fill();
+    poly([[wx - 16, wy + wh + 4], [wx + ww + 16, wy + wh + 4], [wx + ww + 10, wy + wh + 16], [wx - 10, wy + wh + 16]], '#f4efe2');
+    const curtain = (x0, dir) => {
+      ctx.fillStyle = lin(x0, 0, x0 + dir * 70, 0, [[0, '#b8925d'], [.3, '#d9b98a'], [.55, '#c29a63'], [.8, '#dcc097'], [1, '#bb945f']]);
+      poly([[x0, wy - 26], [x0 + dir * 62, wy - 26], [x0 + dir * 72, wy + wh + 60], [x0 - dir * 4, wy + wh + 60]]); ctx.fill();
+    };
+    curtain(wx - 60, 1); curtain(wx + ww + 60, -1);
+    ctx.strokeStyle = '#6b5236'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(wx - 80, wy - 28); ctx.lineTo(wx + ww + 80, wy - 28); ctx.stroke();
+
+    // Porte sur le mur de gauche
+    const yb = x => 800 - (800 - BB) * (x / BL), yt = x => BT * (x / BL);
+    const dt = x => yb(x) - 0.76 * (yb(x) - yt(x));
+    const d0 = 36, d1 = 118;
+    poly([[d0 - 8, dt(d0) - 10], [d1 + 6, dt(d1) - 6], [d1 + 6, yb(d1)], [d0 - 8, yb(d0)]], '#f7f2e6');
+    poly([[d0, dt(d0)], [d1, dt(d1)], [d1, yb(d1)], [d0, yb(d0)]], lin(d0, 0, d1, 0, [[0, '#6f4528'], [1, '#8d5c36']]));
+    ctx.strokeStyle = 'rgba(40,22,10,.45)'; ctx.lineWidth = 2;
+    [[.12, .45], [.55, .9]].forEach(([a, b]) => {
+      const p = (x, f) => [x, dt(x) + (yb(x) - dt(x)) * f], xa = d0 + 14, xb2 = d1 - 12;
+      ctx.beginPath(); [p(xa, a), p(xb2, a), p(xb2, b), p(xa, b)].forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.closePath(); ctx.stroke();
+    });
+    ctx.fillStyle = '#e1b45a'; ctx.beginPath(); ctx.arc(d1 - 10, dt(d1) + (yb(d1) - dt(d1)) * .52, 4.5, 0, Math.PI * 2); ctx.fill();
+
+    // Cadre au mur et suspension
+    ctx.fillStyle = '#5a3a22'; ctx.fillRect(200, 170, 120, 90);
+    ctx.fillStyle = lin(0, 178, 0, 252, [[0, '#cfe0e6'], [.6, '#e8dcc0'], [1, '#8fae7a']]); ctx.fillRect(208, 178, 104, 74);
+    poly([[208, 236], [240, 214], [268, 230], [300, 206], [312, 216], [312, 252], [208, 252]], '#6f8f5e');
+    ctx.strokeStyle = '#3a3a36'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(470, 0); ctx.lineTo(470, 64); ctx.stroke();
+    poly([[440, 64], [500, 64], [512, 96], [428, 96]], lin(428, 0, 512, 0, [[0, '#2d5a3a'], [.5, '#3c7350'], [1, '#2a5236']]));
+    ctx.fillStyle = 'rgba(255,240,190,.9)'; ctx.beginPath(); ctx.ellipse(470, 97, 30, 5, 0, 0, Math.PI * 2); ctx.fill();
+
+    if (!clutter) {
+      // Pièce vide : tache de soleil au sol et parquet propre
+      ctx.fillStyle = lin(0, BB, 0, 800, [[0, 'rgba(255,248,220,.45)'], [1, 'rgba(255,248,220,.12)']]);
+      poly([[wx + 10, BB + 6], [wx + ww - 10, BB + 6], [wx + ww * 1.5, 800], [wx - ww * 0.35, 800]]); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.08)'; poly([[BL, BB], [BR, BB], [1200, 800], [0, 800]]); ctx.fill();
+      ctx.restore(); return;
+    }
+
+    // Cartons en volume : face, dessus et côté tourné vers le centre de la pièce
+    const box = (x, y, bw, bh, d, c) => {
+      const right = x + bw / 2 < VX, ox = right ? d * .55 : -d * .55, oy = -d * .4;
+      shadow(x + bw / 2 + ox / 2, y + bh + 2, bw * .75, 14, .3);
+      poly([[x, y], [x + bw, y], [x + bw + ox, y + oy], [x + ox, y + oy]], lin(0, y + oy, 0, y, [[0, '#e3bf86'], [1, '#d6ab6c']]));
+      const sx = right ? x + bw : x;
+      poly([[sx, y], [sx + ox, y + oy], [sx + ox, y + bh + oy], [sx, y + bh]], '#a87a43');
+      ctx.fillStyle = lin(x, y, x, y + bh, [[0, c || '#c99a5c'], [1, '#b8864a']]); ctx.fillRect(x, y, bw, bh);
+      ctx.strokeStyle = 'rgba(70,40,15,.45)'; ctx.lineWidth = 1.5; ctx.strokeRect(x, y, bw, bh);
+      ctx.fillStyle = 'rgba(235,220,185,.85)'; ctx.fillRect(x + bw * .44, y, bw * .12, bh * .32);
+      poly([[x + bw * .44, y], [x + bw * .56, y], [x + bw * .56 + ox, y + oy], [x + bw * .44 + ox, y + oy]], 'rgba(235,220,185,.9)');
+      ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.fillRect(x + bw * .12, y + bh * .55, bw * .26, bh * .16);
+      ctx.strokeStyle = 'rgba(60,40,20,.5)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x + bw * .15, y + bh * .62); ctx.lineTo(x + bw * .34, y + bh * .62); ctx.stroke();
+    };
+
+    // Armoire ancienne contre le mur
+    shadow(330, 522, 120, 12, .4);
+    ctx.fillStyle = lin(230, 0, 430, 0, [[0, '#5b351c'], [.5, '#7a4a28'], [1, '#5e381e']]); ctx.fillRect(232, 210, 196, 300);
+    ctx.fillStyle = '#4a2a16'; ctx.fillRect(224, 198, 212, 16); ctx.fillRect(228, 504, 204, 14);
+    ctx.strokeStyle = 'rgba(30,15,5,.6)'; ctx.lineWidth = 3; ctx.strokeRect(244, 222, 84, 272); ctx.strokeRect(332, 222, 84, 272);
+    ctx.strokeStyle = 'rgba(255,220,170,.12)'; ctx.lineWidth = 2; ctx.strokeRect(256, 236, 60, 244); ctx.strokeRect(344, 236, 60, 244);
+    ctx.fillStyle = '#e1b45a'; ctx.fillRect(322, 344, 4, 22); ctx.fillRect(336, 344, 4, 22);
+
+    // Miroir posé contre le mur, lampadaire, chaise
+    shadow(505, 524, 40, 8, .3);
+    poly([[478, 330], [532, 326], [538, 520], [472, 522]], '#d98e2b');
+    poly([[486, 340], [524, 337], [529, 510], [481, 512]], lin(480, 0, 530, 0, [[0, '#cfe3ea'], [.5, '#f2f8fa'], [1, '#b9d2db']]));
+    shadow(990, 528, 30, 7, .3);
+    ctx.strokeStyle = '#2c2a24'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(990, 300); ctx.lineTo(990, 520); ctx.stroke();
+    ctx.fillStyle = '#2c2a24'; ctx.beginPath(); ctx.ellipse(990, 522, 26, 6, 0, 0, Math.PI * 2); ctx.fill();
+    poly([[958, 240], [1022, 240], [1040, 306], [940, 306]], lin(940, 0, 1040, 0, [[0, '#244a30'], [.5, '#3c7350'], [1, '#22462d']]));
+    shadow(610, 600, 60, 10, .35);
+    ctx.strokeStyle = '#4a2c16'; ctx.lineWidth = 9; ctx.lineCap = 'round'; ctx.beginPath();
+    ctx.moveTo(570, 600); ctx.lineTo(574, 520); ctx.moveTo(646, 600); ctx.lineTo(642, 520); ctx.moveTo(585, 580); ctx.lineTo(590, 515);
+    ctx.moveTo(574, 520); ctx.lineTo(574, 430); ctx.moveTo(642, 520); ctx.lineTo(640, 440); ctx.stroke(); ctx.lineCap = 'butt';
+    poly([[560, 512], [654, 512], [664, 530], [552, 530]], '#6e4426');
+    ctx.strokeStyle = '#4a2c16'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(576, 452); ctx.lineTo(640, 456); ctx.moveTo(576, 478); ctx.lineTo(640, 480); ctx.stroke();
+
+    // Fauteuil usé au premier plan à droite
+    shadow(1010, 760, 150, 22, .4);
+    ctx.fillStyle = lin(880, 0, 1140, 0, [[0, '#5f7a5c'], [.5, '#728f6e'], [1, '#55704f']]);
+    ctx.beginPath(); ctx.moveTo(900, 760); ctx.lineTo(905, 560); ctx.quadraticCurveTo(1010, 520, 1115, 560); ctx.lineTo(1120, 760); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#6b8867'; ctx.beginPath(); ctx.roundRect(880, 640, 60, 120, 18); ctx.fill(); ctx.beginPath(); ctx.roundRect(1080, 640, 60, 120, 18); ctx.fill();
+    ctx.fillStyle = lin(0, 650, 0, 700, [[0, '#86a382'], [1, '#6b8867']]); ctx.beginPath(); ctx.roundRect(930, 650, 160, 50, 12); ctx.fill();
+    ctx.fillStyle = '#3e2412'; ctx.fillRect(900, 756, 12, 26); ctx.fillRect(1108, 756, 12, 26);
+    ctx.strokeStyle = 'rgba(40,55,40,.35)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(960, 600); ctx.lineTo(1000, 640); ctx.moveTo(1050, 590); ctx.lineTo(1030, 630); ctx.stroke();
+
+    // Piles de cartons
+    box(40, 640, 190, 140, 70); box(64, 530, 150, 110, 60, '#d4a86c'); box(84, 440, 112, 90, 50, '#bf8c4f');
+    box(700, 470, 120, 90, 46, '#d4a86c'); box(830, 500, 92, 66, 40);
+    box(380, 640, 170, 130, 64, '#c3925a'); box(410, 560, 120, 80, 50, '#d4a86c');
+
+    // Tapis roulé, sacs poubelle, pile de livres
+    shadow(330, 790, 150, 12, .35);
+    ctx.fillStyle = lin(0, 760, 0, 796, [[0, '#a3473a'], [.5, '#8e3b2a'], [1, '#6e2c20']]); ctx.beginPath(); ctx.roundRect(190, 760, 280, 34, 17); ctx.fill();
+    ctx.fillStyle = '#e1b45a'; for (let x = 205; x < 460; x += 28) ctx.fillRect(x, 764, 4, 26);
+    ctx.fillStyle = '#6e2c20'; ctx.beginPath(); ctx.ellipse(470, 777, 10, 17, 0, 0, Math.PI * 2); ctx.fill();
+    const bag = (x, y, r) => {
+      shadow(x, y + r * .9, r * 1.1, r * .22, .4);
+      ctx.fillStyle = ctx.createRadialGradient(x - r * .35, y - r * .4, r * .1, x, y, r * 1.1);
+      ctx.fillStyle.addColorStop(0, '#5a5a56'); ctx.fillStyle.addColorStop(1, '#1d1d1b');
+      ctx.beginPath(); ctx.moveTo(x - r * .2, y - r * .95); ctx.quadraticCurveTo(x - r * 1.15, y - r * .5, x - r, y + r * .5);
+      ctx.quadraticCurveTo(x - r * .9, y + r, x, y + r); ctx.quadraticCurveTo(x + r * .9, y + r, x + r, y + r * .5);
+      ctx.quadraticCurveTo(x + r * 1.15, y - r * .5, x + r * .2, y - r * .95); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#1d1d1b'; poly([[x - r * .2, y - r * .95], [x - r * .32, y - r * 1.25], [x, y - r * 1.05], [x + r * .32, y - r * 1.25], [x + r * .2, y - r * .95]]); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x - r * .6, y - r * .2); ctx.quadraticCurveTo(x - r * .4, y + r * .3, x - r * .1, y + r * .6); ctx.stroke();
+    };
+    bag(820, 700, 62); bag(730, 735, 48);
+    const books = [['#2d5a3a', 70], ['#8e3b2a', 64], ['#d98e2b', 74], ['#5a3a22', 66]];
+    let by = 780; shadow(620, 782, 50, 8, .3);
+    books.forEach(([c, bw], i) => { ctx.fillStyle = c; ctx.fillRect(585 + (i % 2) * 6, by - 16, bw, 16); ctx.fillStyle = 'rgba(255,250,235,.8)'; ctx.fillRect(585 + (i % 2) * 6 + bw - 6, by - 14, 4, 12); by -= 16; });
+    ctx.restore();
   }
 
   function canvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
@@ -376,7 +623,7 @@ main { padding-block: clamp(28px, 5vw, 56px); }
     $('#dropTitle').textContent = isSample ? 'Déposez la photo de votre pièce encombrée' : 'Votre photo est prête !';
     $('#dropText').textContent = isSample ? 'Salon, cave, grenier, garage… Prenez-la en photo ou choisissez-en une dans votre téléphone ou votre ordinateur.' : 'Appuyez maintenant sur le bouton orange « Voir ma pièce vidée », juste en dessous.';
     $('#dropPick').textContent = isSample ? 'Choisir ma photo' : 'Changer de photo';
-    result.hidden = true; tilesEl.innerHTML = '';
+    result.hidden = true; tilesEl.innerHTML = ''; clearFx();
     truck.style.transform = 'translateX(140%)';
     go.disabled = false; setStep(1);
   }
@@ -432,8 +679,8 @@ main { padding-block: clamp(28px, 5vw, 56px); }
 
   function fail(err) {
     stage.classList.remove('waiting');
-    tilesEl.innerHTML = ''; demoBadge.hidden = true;
-    truck.getAnimations().forEach(a => a.cancel()); truck.style.transform = 'translateX(140%)';
+    tilesEl.innerHTML = ''; demoBadge.hidden = true; clearFx();
+    truck.getAnimations().forEach(a => a.cancel()); resetVan(); truck.style.transform = 'translateX(140%)';
     stage.dataset.mode = 'before'; setStep(1);
     running = false; go.disabled = false;
     msg.textContent = err.message || String(err);
@@ -450,6 +697,104 @@ main { padding-block: clamp(28px, 5vw, 56px); }
     return Promise.race([a.finished, wait(max)]);
   }
 
+  // Portes et chargement du fourgon : remis à l'état fermé et vide
+  const vanSlide = truck.querySelector('#vm-slide'), vanRear = truck.querySelector('#vm-rear'), vanItems = [...truck.querySelectorAll('.vm-item')];
+  function resetVan() {
+    [vanSlide, vanRear, ...vanItems].forEach(el => el.getAnimations().forEach(a => a.cancel()));
+  }
+  // Les roues tournent d'autant que le fourgon avance (distance en unités du dessin, roue de rayon 19)
+  const vanWheels = [...truck.querySelectorAll('.vm-spin')];
+  let wheelAngle = 0;
+  function spinWheels(dist, opts) {
+    const from = wheelAngle; wheelAngle -= dist / (2 * Math.PI * 19) * 360;
+    vanWheels.forEach(w => { w.getAnimations().forEach(a => a.cancel()); w.animate([{ transform: `rotate(${from}deg)` }, { transform: `rotate(${wheelAngle}deg)` }], Object.assign({ fill: 'forwards' }, opts)); });
+  }
+  function vanDoors(open) {
+    const s = ['translateX(0)', 'translateX(64px)'], r = ['scaleX(0)', 'scaleX(1)'];
+    if (!open) { s.reverse(); r.reverse(); }
+    return Promise.all([
+      anim(vanSlide, [{ transform: s[0] }, { transform: s[1] }], { duration: 700, easing: 'ease-in-out' }),
+      anim(vanRear, [{ transform: r[0] }, { transform: r[1] }], { duration: 550, delay: open ? 150 : 0, easing: 'ease-in-out' })
+    ]).catch(() => {});
+  }
+
+  // Couche de poussière posée sur la pièce vidée, avant le coup de balai
+  function paintDust() {
+    const c = document.getElementById('dust'), r = stage.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const W = c.width = Math.max(1, Math.round(r.width * dpr)), H = c.height = Math.max(1, Math.round(r.height * dpr)), x = c.getContext('2d');
+    x.clearRect(0, 0, W, H);
+    x.fillStyle = 'rgba(110,95,70,.16)'; x.fillRect(0, 0, W, H);
+    const floor = x.createLinearGradient(0, H * .55, 0, H); floor.addColorStop(0, 'rgba(110,90,60,0)'); floor.addColorStop(1, 'rgba(110,90,60,.22)');
+    x.fillStyle = floor; x.fillRect(0, H * .55, W, H * .45);
+    for (let i = 0; i < 6; i++) {
+      x.fillStyle = 'rgba(95,75,45,.14)'; x.beginPath();
+      x.ellipse(W * (.1 + Math.random() * .8), H * (.72 + Math.random() * .22), W * (.03 + Math.random() * .05), H * (.012 + Math.random() * .02), 0, 0, Math.PI * 2); x.fill();
+    }
+    for (let i = 0; i < 900; i++) {
+      const onFloor = Math.random() < .85, yy = onFloor ? H * (.66 + Math.random() * .34) : H * Math.random() * .66;
+      const s = (onFloor ? .5 + Math.random() * 1.3 : .4 + Math.random() * .6) * dpr;
+      x.fillStyle = `rgba(${120 + Math.random() * 50 | 0},${105 + Math.random() * 45 | 0},${80 + Math.random() * 35 | 0},${onFloor ? .2 + Math.random() * .3 : .12 + Math.random() * .15})`;
+      x.beginPath(); x.arc(Math.random() * W, yy, s, 0, Math.PI * 2); x.fill();
+    }
+    for (let b = 0; b < 7; b++) {
+      const bx = W * (.05 + Math.random() * .9), by = H * (.8 + Math.random() * .16), br = W * (.012 + Math.random() * .014);
+      for (let i = 0; i < 70; i++) {
+        const a = Math.random() * Math.PI * 2, d = Math.random() * br;
+        x.fillStyle = `rgba(150,140,125,${.25 + Math.random() * .4})`; x.beginPath(); x.arc(bx + Math.cos(a) * d, by + Math.sin(a) * d * .6, (.6 + Math.random()) * dpr, 0, Math.PI * 2); x.fill();
+      }
+    }
+    x.strokeStyle = 'rgba(200,195,185,.55)'; x.lineWidth = dpr;
+    [[0, 1], [W, -1]].forEach(([cx, dir]) => {
+      for (let i = 1; i <= 4; i++) { x.beginPath(); x.arc(cx, 0, W * .025 * i, dir > 0 ? 0 : Math.PI / 2, dir > 0 ? Math.PI / 2 : Math.PI); x.stroke(); }
+      for (let i = 0; i < 4; i++) { const a = (dir > 0 ? 0 : Math.PI / 2) + i * Math.PI / 6; x.beginPath(); x.moveTo(cx, 0); x.lineTo(cx + Math.cos(a) * W * .1, Math.sin(a) * W * .1); x.stroke(); }
+    });
+  }
+  function clearFx() {
+    const c = document.getElementById('dust'), f = document.getElementById('fx');
+    c.classList.remove('on'); c.getAnimations().forEach(a => a.cancel()); f.innerHTML = '';
+  }
+  const STAR = '<svg viewBox="-10 -10 20 20"><path d="M0 -10 Q1.2 -1.2 10 0 Q1.2 1.2 0 10 Q-1.2 1.2 -10 0 Q-1.2 -1.2 0 -10 Z" fill="#fffdf2" stroke="#f4c45a" stroke-width=".8"/></svg>';
+  const BROOM = '<svg viewBox="0 0 60 160"><path d="M44 2 L31 112" stroke="#8a5a34" stroke-width="5" stroke-linecap="round"/><path d="M26 106 H38 L40 116 H24 Z" fill="#9aa1a7" stroke="#5e6468" stroke-width="1"/><path d="M22 114 H42 L58 158 H2 Z" fill="#e0a64a" stroke="#8a5a1a" stroke-width="1.5" stroke-linejoin="round"/><path d="M14 132 H46 M9 145 H51" stroke="#b97c2c" stroke-width="1.5"/><path d="M12 158 L20 120 M22 158 L27 120 M32 158 L33 120 M42 158 L38 120 M50 158 L42 120" stroke="#b97c2c" stroke-width="1"/></svg>';
+  async function cleanUp() {
+    stage.classList.remove('waiting');
+    const c = document.getElementById('dust'), f = document.getElementById('fx');
+    if (reduce || !c.classList.contains('on')) return;
+    const W = stage.clientWidth, H = stage.clientHeight;
+    // Coup de balai de gauche à droite : la poussière disparaît derrière lui
+    const b = document.createElement('div'); b.className = 'broom'; b.innerHTML = BROOM; f.appendChild(b);
+    const bw = H * .5 * 60 / 160; b.style.width = bw + 'px'; b.querySelector('svg').style.cssText = 'width:100%;height:100%;display:block';
+    const sweep = { duration: 1600, easing: 'ease-in-out' };
+    b.animate([{ left: (-bw / 2) + 'px' }, { left: (W - bw / 2) + 'px' }], Object.assign({ fill: 'forwards' }, sweep));
+    b.animate([{ transform: 'rotate(-16deg)' }, { transform: 'rotate(6deg)' }, { transform: 'rotate(-16deg)' }], { duration: 400, iterations: 4, easing: 'ease-in-out' });
+    const puffs = setInterval(() => {
+      const p = document.createElement('div'); p.className = 'puff';
+      const bx = b.getBoundingClientRect(), sr = stage.getBoundingClientRect();
+      p.style.left = (bx.left - sr.left + bx.width * .3) + 'px'; p.style.top = (bx.bottom - sr.top - bx.height * .06) + 'px'; f.appendChild(p);
+      p.animate([{ opacity: .9, transform: 'translate(-50%,-50%) scale(.4)' }, { opacity: 0, transform: 'translate(-90%,-120%) scale(1.6)' }], { duration: 650, easing: 'ease-out', fill: 'forwards' });
+      setTimeout(() => p.remove(), 700);
+    }, 120);
+    await anim(c, [{ clipPath: 'inset(0 0 0 0)' }, { clipPath: 'inset(0 0 0 100%)' }], sweep).catch(() => {});
+    clearInterval(puffs);
+    c.classList.remove('on'); c.getAnimations().forEach(a => a.cancel());
+    b.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 250, fill: 'forwards' });
+    // Reflet qui traverse la pièce, puis petites étincelles : c'est nickel
+    const s = document.createElement('div'); s.className = 'shine'; f.appendChild(s);
+    s.animate([{ left: '-45%' }, { left: '110%' }], { duration: 800, easing: 'ease-in-out', fill: 'forwards' });
+    const spots = [[.18, .78], [.42, .86], [.66, .8], [.85, .9], [.3, .62], [.74, .3], [.55, .7], [.12, .4], [.9, .55], [.38, .25]];
+    const sparks = spots.map(([sx, sy], i) => {
+      const e = document.createElement('div'); e.className = 'spark'; e.innerHTML = STAR;
+      e.style.left = (sx * 100) + '%'; e.style.top = (sy * 100) + '%'; f.appendChild(e);
+      const k = .6 + Math.random() * .7;
+      return anim(e, [
+        { transform: 'translate(-50%,-50%) scale(0) rotate(0deg)', opacity: 1 },
+        { transform: `translate(-50%,-50%) scale(${k}) rotate(45deg)`, opacity: 1, offset: .45 },
+        { transform: 'translate(-50%,-50%) scale(0) rotate(90deg)', opacity: 0 }
+      ], { duration: 750, delay: 150 + i * 90, easing: 'ease-out' });
+    });
+    await Promise.all(sparks).catch(() => {});
+    f.innerHTML = '';
+  }
+
   let devisTimer = null;
   function toCompare() {
     clearTimeout(devisTimer);
@@ -460,7 +805,7 @@ main { padding-block: clamp(28px, 5vw, 56px); }
     }, 10000);
     if (!isSample) imgAfter.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 500 });
     stage.classList.remove('waiting');
-    tilesEl.innerHTML = '';
+    tilesEl.innerHTML = ''; clearFx();
     stage.dataset.mode = 'compare';
     slider.value = 50; stage.style.setProperty('--x', '50%');
     demoBadge.hidden = true;
@@ -503,13 +848,19 @@ main { padding-block: clamp(28px, 5vw, 56px); }
       tilesEl.appendChild(t); tiles.push(t);
     }
     stage.dataset.mode = 'run';
+    paintDust(); dust.classList.add('on');
 
-    truck.getAnimations().forEach(a => a.cancel());
-    await anim(truck, [{ transform: 'translateX(140%)' }, { transform: 'translateX(0)' }], { duration: 1000, easing: 'cubic-bezier(.2,.8,.3,1)' }).catch(() => {});
+    truck.getAnimations().forEach(a => a.cancel()); resetVan();
+    const arrive = { duration: 1000, easing: 'cubic-bezier(.2,.8,.3,1)' };
+    spinWheels(1.4 * 316, arrive);
+    await anim(truck, [{ transform: 'translateX(140%)' }, { transform: 'translateX(0)' }], arrive).catch(() => {});
+    if (failed) return;
+    await vanDoors(true);
     if (failed) return;
 
+    // Les morceaux de la photo entrent par la porte latérale ; le chargement apparaît au fur et à mesure
     const tr = truck.getBoundingClientRect();
-    const tx = tr.left - rect.left + tr.width * (208 / 316), ty = tr.top - rect.top + tr.height * (60 / 162);
+    const tx = tr.left - rect.left + tr.width * (169 / 316), ty = tr.top - rect.top + tr.height * (92 / 162);
     const order = tiles.map((t, k) => k).sort(() => Math.random() - 0.5);
     const flights = order.map((k, n) => {
       const t = tiles[k], b = t.getBoundingClientRect();
@@ -519,22 +870,31 @@ main { padding-block: clamp(28px, 5vw, 56px); }
         { transform: 'translate(0,0) scale(1) rotate(0deg)', opacity: 1 },
         { transform: `translate(${dx * 0.45}px, ${dy * 0.45 - 60}px) scale(.55) rotate(${rot / 2}deg)`, opacity: 1, offset: .5 },
         { transform: `translate(${dx}px, ${dy}px) scale(.05) rotate(${rot}deg)`, opacity: .6 }
-      ], { duration: 750, delay: n * 110, easing: 'ease-in' });
+      ], { duration: 750, delay: n * 110, easing: 'ease-in' }).then(() => {
+        const item = vanItems[Math.floor(n * vanItems.length / order.length)];
+        if (item && !item.getAnimations().length) anim(item, [{ opacity: 0, transform: 'translateY(-8px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 260, easing: 'ease-out' });
+      });
     });
     await Promise.all(flights).catch(() => {});
     if (failed) return;
     tilesEl.innerHTML = '';
+    await wait(450);
+    if (failed) return;
+    await vanDoors(false);
+    if (failed) return;
 
     await anim(truck, [{ transform: 'translateX(0) translateY(0)' }, { transform: 'translateX(0) translateY(4px)' }, { transform: 'translateX(0) translateY(0)' }], { duration: 300 }).catch(() => {});
     if (failed) return;
     await wait(150);
-    const off = -(tr.right - rect.left) - 20;
-    await anim(truck, [{ transform: 'translateX(0)' }, { transform: `translateX(${off}px)` }], { duration: 1200, easing: 'cubic-bezier(.5,0,.8,.4)' }).catch(() => {});
+    const off = -(tr.right - rect.left) - 20, leave = { duration: 1200, easing: 'cubic-bezier(.5,0,.8,.4)' };
+    spinWheels(-off * 316 / tr.width, leave);
+    await anim(truck, [{ transform: 'translateX(0)' }, { transform: `translateX(${off}px)` }], leave).catch(() => {});
     if (failed) return;
-    truck.getAnimations().forEach(a => a.cancel());
+    truck.getAnimations().forEach(a => a.cancel()); resetVan();
     truck.style.transform = 'translateX(140%)';
     try { await aiJob; } catch (e) { return; }
-    await wait(150);
+    await cleanUp();
+    if (failed) return;
     toCompare();
   }
 
