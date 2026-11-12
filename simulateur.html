@@ -852,7 +852,7 @@ main { padding-block: clamp(28px, 5vw, 56px); }
       tilesEl.appendChild(t); tiles.push(t);
     }
     stage.dataset.mode = 'run';
-    paintDust(); dust.classList.add('on');
+    if (isSample) { paintDust(); document.getElementById('dust').classList.add('on'); }
 
     truck.getAnimations().forEach(a => a.cancel()); resetVan();
     const arrive = { duration: 1000, easing: 'cubic-bezier(.2,.8,.3,1)' };
