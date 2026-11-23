@@ -402,8 +402,9 @@ textarea { min-height: 120px; resize: vertical; }
   .hp-contact { justify-items: center; }
 }
 
-/* Accueil : fond crème à trame de points, carte sobre avec une seule bande de damier en haut */
-.band.hero { background-color: #f4eedb; background-image: radial-gradient(rgba(45, 90, 58, .16) 1px, transparent 1.4px), radial-gradient(ellipse at 50% 0%, #fffcf0 0%, #f4eedb 55%, #ebe3c8 100%); background-size: 22px 22px, 100% 100%; padding-block: clamp(36px, 6vw, 84px); }
+/* Accueil : fond crème et pan vert en diagonale avec filet orange, carte sobre avec une seule bande de damier en haut */
+.band.hero { background: linear-gradient(115deg, #f7f2df 0 58%, #d98e2b 58% 58.35%, #f7f2df 58.35% 59.2%, #24482f 59.2% 100%); padding-block: clamp(36px, 6vw, 84px); }
+@media (max-width: 860px) { .band.hero { background: linear-gradient(160deg, #f7f2df 0 52%, #d98e2b 52% 52.5%, #f7f2df 52.5% 53.6%, #24482f 53.6% 100%); } }
 .band.hero .frame.ring { padding: 0 !important; background: var(--paper) !important; border: 1px solid rgba(45, 90, 58, .22) !important; box-shadow: 0 24px 50px -30px rgba(31, 64, 41, .45); }
 .band.hero .frame.ring > .ring-inner { border: 0 !important; position: relative; background: var(--paper) !important; }
 /* Liseré damier sous la barre de navigation (le reste de la page reste clair) */
