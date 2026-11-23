@@ -376,6 +376,20 @@ textarea { min-height: 120px; resize: vertical; }
 .frame.ring > .ring-inner { border: 1px solid var(--green) !important; }
 
 .hero-art { width: min(500px, 92%) !important; }
+
+/* Accueil : défilé des photos avant / après en fond, sous un voile blanc */
+.band.hero { position: relative; overflow: hidden; isolation: isolate; padding-block: clamp(32px, 6vw, 80px); }
+.band.hero > .wrap { position: relative; z-index: 2; }
+.hero-slides { position: absolute; inset: 0; z-index: 0; background: var(--cream); }
+.hero-slide { position: absolute; inset: 0; background-position: center; background-size: cover; opacity: 0; transition: opacity 1.6s ease; }
+.hero-slide.on { opacity: 1; animation: hero-zoom 7s ease-out both; }
+@keyframes hero-zoom { from { transform: scale(1.06); } to { transform: scale(1); } }
+.hero-slides::after { content: ""; position: absolute; inset: 0; background: rgba(255, 252, 240, .45); }
+.band.hero .frame.ring { background-color: rgba(255, 252, 240, .7) !important; box-shadow: 0 30px 60px -26px rgba(31, 64, 41, .5); }
+.band.hero .frame-inner { background: rgba(255, 252, 240, .78) !important; -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+.hero-slide-tag { position: absolute; z-index: 3; right: clamp(10px, 2vw, 24px); top: clamp(8px, 1.4vw, 16px); font-family: var(--f-display); font-size: .85rem; letter-spacing: .12em; text-transform: uppercase; color: var(--paper); background: var(--green-deep); padding: 5px 12px; transition: opacity .6s ease; }
+.hero-slide-tag.apres { background: var(--ochre); color: #fff; }
+@media (prefers-reduced-motion: reduce) { .hero-slide.on { animation: none; } .hero-slide { transition: none; } }
 </style>
 </head>
 <body>
@@ -440,6 +454,8 @@ textarea { min-height: 120px; resize: vertical; }
 </header>
 
 <section class="band hero" id="top">
+  <div class="hero-slides" id="hero-slides" aria-hidden="true"></div>
+  <span class="hero-slide-tag" id="hero-slide-tag" aria-hidden="true"></span>
   <div class="wrap">
     <div class="frame ring">
       <div class="frame-inner ring-inner hero-inner">
@@ -1395,6 +1411,29 @@ var LIENS = {
       await cycle();
     }
   })();
+})();
+</script>
+<script>
+(function () {
+  var box = document.getElementById('hero-slides'), tag = document.getElementById('hero-slide-tag');
+  if (!box) return;
+  var P = [
+    ['photos/cave-voutee-avant.jpg', 'Avant', 'Cave voûtée'], ['photos/cave-voutee-apres.jpg', 'Après', 'Cave voûtée'],
+    ['photos/garage-avant.jpg', 'Avant', 'Garage'], ['photos/garage-apres.jpg', 'Après', 'Garage'],
+    ['photos/combles-avant.jpg', 'Avant', 'Combles'], ['photos/combles-apres.jpg', 'Après', 'Combles']
+  ];
+  var els = P.map(function (p) { var d = document.createElement('div'); d.className = 'hero-slide'; box.appendChild(d); return d; });
+  var charge = function (k) { if (!els[k].style.backgroundImage) els[k].style.backgroundImage = 'url("' + P[k][0] + '")'; };
+  var i = 0;
+  var montrer = function (k) {
+    charge(k); charge((k + 1) % P.length);
+    els.forEach(function (e, j) { e.classList.toggle('on', j === k); });
+    tag.textContent = P[k][1] + ' · ' + P[k][2];
+    tag.classList.toggle('apres', P[k][1] === 'Après');
+  };
+  montrer(0);
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  setInterval(function () { if (!document.hidden) { i = (i + 1) % P.length; montrer(i); } }, 4200);
 })();
 </script>
 </body>
