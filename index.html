@@ -445,9 +445,6 @@ textarea { min-height: 120px; resize: vertical; }
     radial-gradient(ellipse 50% 60% at 100% 100%, rgba(10, 30, 18, .55), transparent 70%),
     linear-gradient(150deg, #2f5e3d 0%, #24482f 50%, #1b3826 100%); }
 .hd-orange { background: #d98e2b; }
-.hd-link { display: none; position: absolute; left: 0; top: 0; width: 100%; z-index: 2; pointer-events: none; background: #d98e2b; transition: opacity .25s ease; }
-.hd-link.on { display: block; }
-.hd-link.off { opacity: 0; }
 </style>
 </head>
 <body>
@@ -493,7 +490,6 @@ textarea { min-height: 120px; resize: vertical; }
 
 <div class="ring site-ring"><div class="ring-inner">
 <header class="band topbar">
-  <span class="hd-link" aria-hidden="true"></span>
   <div class="wrap">
     <a class="logo" href="#top">VID'ANTIK</a>
     <button class="menu-btn" type="button" aria-expanded="false" aria-controls="nav"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>Menu</button>
@@ -1481,13 +1477,12 @@ var LIENS = {
 (function () {
   var hero = document.querySelector('.band.hero'), btn = document.querySelector('.nav a.nav-sim');
   if (!hero || !btn) return;
-  var g = hero.querySelector('.hd-green'), o = hero.querySelector('.hd-orange'), lien = document.querySelector('.hd-link');
-  window.addEventListener('scroll', function () { if (lien) lien.classList.toggle('off', window.scrollY > 4); }, { passive: true });
+  var g = hero.querySelector('.hd-green'), o = hero.querySelector('.hd-orange');
   var T = Math.tan(25 * Math.PI / 180), C = Math.cos(25 * Math.PI / 180);
   var ORANGE = 5 / C, GAP = 12 / C; // largeurs mesurées perpendiculairement au trait
   var caler = function () {
     var b = btn.getBoundingClientRect(), h = hero.getBoundingClientRect();
-    if (!b.width || window.innerWidth <= 860) { hero.classList.remove('diag-js'); if (lien) lien.classList.remove('on'); return; }
+    if (!b.width || window.innerWidth <= 860) { hero.classList.remove('diag-js'); return; }
     var W = h.width, H = h.height, bx = b.left - h.left, by = b.bottom - h.top;
     var x = function (y) { return bx - T * (y - by); }; // bord gauche du filet orange passe par le coin
     var p = function (pts) { return 'polygon(' + pts.map(function (q) { return q[0].toFixed(1) + 'px ' + q[1].toFixed(1) + 'px'; }).join(',') + ')'; };
@@ -1495,14 +1490,6 @@ var LIENS = {
     var gx = function (y) { return x(y) + ORANGE + GAP; };
     g.style.clipPath = p([[gx(0), 0], [W, 0], [W, H], [gx(H), H]]);
     hero.classList.add('diag-js');
-    // prolongement du filet à travers le damier jusqu'au coin du bouton
-    if (lien) {
-      var tb = lien.parentNode.getBoundingClientRect(), hh = h.top - tb.top + 15; // jusqu'au bas du damier
-      var y0 = b.bottom - tb.top, xl = function (yy) { return b.left - tb.left - T * (yy - y0); };
-      lien.style.height = hh + 'px';
-      lien.style.clipPath = p([[xl(y0), y0], [xl(y0) + ORANGE, y0], [xl(hh) + ORANGE, hh], [xl(hh), hh]]);
-      lien.classList.add('on');
-    }
   };
   caler();
   window.addEventListener('resize', caler);
