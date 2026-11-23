@@ -146,16 +146,16 @@ textarea { min-height: 150px; resize: vertical; }
 
       <div class="actions"><button class="btn btn-green" type="submit">Envoyer mon avis</button></div>
       <p class="error" id="error" hidden></p>
+      <input type="text" name="site" id="site" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px">
       <div class="sent" id="sent" hidden>
         <b>Merci pour votre avis !</b>
-        <p>Votre messagerie s'ouvre avec l'avis déjà rédigé : il ne reste qu'à cliquer sur « Envoyer ». Il sera publié sur le site après relecture.</p>
-        <p>Rien ne s'ouvre ? Envoyez votre avis à <b style="font-size:1rem;user-select:all">vidantikk@gmail.com</b>.</p>
+        <p>Il a bien été envoyé à Vid'Antik et apparaîtra sur le site après relecture.</p>
       </div>
     </form>
 
     <div class="google">
       <p>Vous avez un compte Google ? Votre avis y est aussi très précieux.</p>
-      <a class="btn btn-line" href="https://share.google/b9N5Bp5KN6JMz7ZJe" target="_blank" rel="noopener">Laisser aussi un avis sur Google</a>
+      <a class="btn btn-line" href="https://g.page/r/CRUJUcm08WShEBM/review" target="_blank" rel="noopener">Laisser aussi un avis sur Google</a>
     </div>
   </div>
 </main>
@@ -167,6 +167,7 @@ textarea { min-height: 150px; resize: vertical; }
 </div></div>
 
 <script>
+var API = 'https://vidantik-avis.vidantikk.workers.dev/avis';
 (function () {
   var LABELS = { 1: 'Décevant', 2: 'Moyen', 3: 'Correct', 4: 'Très bien', 5: 'Excellent' };
   var form = document.getElementById('review-form');
@@ -185,11 +186,26 @@ textarea { min-height: 150px; resize: vertical; }
       : !document.getElementById('accord').checked ? 'Cochez la case pour accepter la publication de votre avis.' : '';
     if (missing) { err.textContent = missing; err.hidden = false; return; }
     err.hidden = true;
-    var stars = '★★★★★'.slice(0, note()) + '☆☆☆☆☆'.slice(0, 5 - note());
-    var body = 'Note : ' + stars + ' (' + note() + '/5)\nNom : ' + v('nom') + '\nCommune : ' + v('commune') +
-      '\nPrestation : ' + v('prestation') + '\n\nAvis :\n' + v('texte') + '\n\nJ\'accepte la publication de cet avis sur le site Vid\'Antik.';
-    window.location.href = 'mailto:vidantikk@gmail.com?subject=' + encodeURIComponent('Avis client - ' + v('nom') + ' - ' + note() + '/5') + '&body=' + encodeURIComponent(body);
-    document.getElementById('sent').hidden = false;
+    var btn = form.querySelector('button[type="submit"]');
+    var data = { nom: v('nom'), commune: v('commune'), prestation: v('prestation'), note: note(), texte: v('texte'), accord: true, site: v('site') };
+    var mailto = function () {
+      var body = 'Note : ' + note() + '/5\nNom : ' + data.nom + '\nCommune : ' + data.commune + '\nPrestation : ' + data.prestation + '\n\nAvis :\n' + data.texte;
+      return 'mailto:vidantikk@gmail.com?subject=' + encodeURIComponent('Avis client - ' + data.nom) + '&body=' + encodeURIComponent(body);
+    };
+    btn.disabled = true; btn.textContent = 'Envoi en cours…';
+    fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok && j.ok, j: j }; }); })
+      .then(function (res) {
+        if (!res.ok) { var er = new Error(res.j && res.j.erreur || ''); er.serveur = true; throw er; }
+        form.querySelectorAll('.field, .row2, .check, .actions').forEach(function (x) { x.style.display = 'none'; });
+        document.getElementById('sent').hidden = false;
+      })
+      .catch(function (ex) {
+        btn.disabled = false; btn.textContent = 'Envoyer mon avis';
+        err.textContent = (ex.serveur && ex.message ? ex.message : 'L\'envoi n\'a pas fonctionné.') + ' ';
+        var a = document.createElement('a'); a.href = mailto(); a.textContent = 'Envoyer plutôt par e-mail';
+        err.appendChild(a); err.hidden = false;
+      });
   });
 })();
 </script>

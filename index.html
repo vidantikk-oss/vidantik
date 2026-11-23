@@ -240,18 +240,29 @@ section[id] { scroll-margin-top: 64px; }
 .recycle-badge img { width: 72px; height: auto; }
 
 /* Avis */
-.reviews { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
-.review { background: var(--paper); border: 1px solid var(--line); padding: 24px; display: grid; gap: 12px; align-content: start; min-width: 0; }
+.reviews { display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; }
+.reviews .review { width: min(360px, 100%); }
+.reviews.defile { display: block; overflow: hidden; margin-inline: calc(50% - 50vw); padding-block: 6px;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); }
+.reviews-track { display: flex; gap: 24px; width: max-content; animation: avis-defile var(--duree, 40s) linear infinite; }
+.reviews-track .review { width: clamp(280px, 80vw, 380px); flex: none; }
+.reviews.defile:hover .reviews-track, .reviews.defile:focus-within .reviews-track, .reviews.defile.pause .reviews-track { animation-play-state: paused; }
+@keyframes avis-defile { from { transform: translateX(0); } to { transform: translateX(calc(-50% - 12px)); } }
+.review { background: var(--paper); border: 1px solid var(--line); padding: 24px; display: grid; gap: 12px; align-content: start; min-width: 0; animation: avis-arrive .7s ease both; }
+@keyframes avis-arrive { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 .stars { color: var(--ochre); letter-spacing: .12em; font-size: 1.15rem; }
 .review blockquote { margin: 0; font-style: italic; }
 .review footer { color: var(--muted); font-size: .95rem; }
 .review footer b { color: var(--green); font-family: var(--f-display); font-style: normal; }
+@media (prefers-reduced-motion: reduce) {
+  .reviews-track { animation: none; overflow-x: auto; width: auto; }
+  .reviews.defile { margin-inline: 0; -webkit-mask-image: none; mask-image: none; }
+  .review { animation: none; }
+}
 .reviews-empty { max-width: 640px; margin-inline: auto; text-align: center; background: var(--paper); border: 1px dashed var(--line); padding: clamp(24px, 4vw, 40px); display: grid; gap: 14px; justify-items: center; }
 .reviews-empty .stars { font-size: 1.6rem; }
 .reviews-empty p { color: var(--muted); max-width: 46ch; }
 .reviews-cta { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 28px; }
-@media (max-width: 900px) { .reviews { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 560px) { .reviews { grid-template-columns: 1fr; } }
 
 /* Devis */
 .quote { display: grid; grid-template-columns: 1fr 1.15fr; gap: 28px; align-items: start; }
@@ -942,25 +953,48 @@ document.querySelectorAll('.ba').forEach(function (ba) {
   btn.addEventListener('click', function () { set(!nav.classList.contains('open')); });
   nav.addEventListener('click', function (e) { if (e.target.closest('a')) set(false); });
 })();
-// Vrais avis clients uniquement, recopiés depuis Google. Exemple de format :
-// { nom: "Prénom N.", note: 5, texte: "…", date: "octobre 2026" },
+// Avis clients reçus par e-mail ou ailleurs, ajoutés à la main (vrais avis uniquement).
+// Format : { nom: "Prénom N.", note: 5, texte: "…", date: "octobre 2026", commune: "…" },
 var AVIS = [
 ];
+// Les avis déposés sur vidantik.fr/avis.html et validés par Valentin arrivent d'ici :
+var AVIS_API = 'https://vidantik-avis.vidantikk.workers.dev/avis';
 (function () {
   var list = document.getElementById('reviews-list');
   var empty = document.getElementById('reviews-empty');
-  if (!AVIS.length) { list.hidden = true; return; }
-  empty.hidden = true;
-  AVIS.forEach(function (a) {
+  var carte = function (a) {
     var el = document.createElement('article'); el.className = 'review';
+    var n = Math.max(1, Math.min(5, Math.round(a.note) || 5));
     var stars = document.createElement('span'); stars.className = 'stars';
-    stars.textContent = '★★★★★'.slice(0, a.note) + '☆☆☆☆☆'.slice(0, 5 - a.note);
-    stars.setAttribute('aria-label', a.note + ' sur 5');
+    stars.textContent = '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n);
+    stars.setAttribute('aria-label', n + ' sur 5');
     var q = document.createElement('blockquote'); q.textContent = '« ' + a.texte + ' »';
     var f = document.createElement('footer'); var b = document.createElement('b'); b.textContent = a.nom;
-    f.appendChild(b); f.appendChild(document.createTextNode(' · ' + a.date + ' · avis Google'));
-    el.appendChild(stars); el.appendChild(q); el.appendChild(f); list.appendChild(el);
-  });
+    f.appendChild(b); f.appendChild(document.createTextNode([a.commune, a.date].filter(Boolean).map(function (x) { return ' · ' + x; }).join('')));
+    el.appendChild(stars); el.appendChild(q); el.appendChild(f); return el;
+  };
+  var afficher = function (avis) {
+    list.textContent = '';
+    if (!avis.length) { list.hidden = true; empty.hidden = false; return; }
+    empty.hidden = true; list.hidden = false;
+    if (avis.length < 3) { // trop peu d'avis pour un défilé : ils apparaissent en douceur
+      list.classList.remove('defile');
+      avis.forEach(function (a, i) { var c = carte(a); c.style.animationDelay = (i * 0.15) + 's'; list.appendChild(c); });
+      return;
+    }
+    list.classList.add('defile');
+    var track = document.createElement('div'); track.className = 'reviews-track';
+    avis.forEach(function (a) { track.appendChild(carte(a)); });
+    avis.forEach(function (a) { var c = carte(a); c.setAttribute('aria-hidden', 'true'); track.appendChild(c); });
+    track.style.setProperty('--duree', Math.max(25, avis.length * 9) + 's');
+    list.appendChild(track);
+    list.addEventListener('touchstart', function () { list.classList.toggle('pause'); }, { passive: true });
+  };
+  afficher(AVIS);
+  if (!AVIS_API || !window.fetch) return;
+  fetch(AVIS_API).then(function (r) { return r.ok ? r.json() : []; }).then(function (enLigne) {
+    if (Array.isArray(enLigne) && enLigne.length) afficher(enLigne.concat(AVIS));
+  }).catch(function () {});
 })();
 (function () {
   document.querySelectorAll('.copy').forEach(function (b) {
