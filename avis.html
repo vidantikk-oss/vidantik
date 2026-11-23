@@ -150,6 +150,9 @@ textarea { min-height: 150px; resize: vertical; }
       <div class="sent" id="sent" hidden>
         <b>Merci pour votre avis !</b>
         <p>Il a bien été envoyé à Vid'Antik et apparaîtra sur le site après relecture.</p>
+        <p><b style="font-size:1.05rem">Vous avez un compte Google ?</b> Votre avis y serait aussi très précieux : il aide d'autres clients à nous trouver. Votre texte est déjà prêt, il suffit de le coller.</p>
+        <div><button class="btn btn-green" type="button" id="copier-google">Copier mon avis et ouvrir Google</button></div>
+        <p class="hint" id="copie-ok" hidden>Avis copié ! Sur Google, choisissez vos étoiles, puis faites un appui long (ou Ctrl + V) dans la zone de texte pour le coller.</p>
       </div>
     </form>
 
@@ -177,6 +180,12 @@ var API = 'https://vidantik-avis.vidantikk.workers.dev/avis';
   form.addEventListener('change', function (e) {
     if (e.target.name === 'note') ratingText.textContent = note() + ' sur 5 · ' + LABELS[note()];
   });
+  document.getElementById('copier-google').addEventListener('click', function () {
+    var txt = document.getElementById('texte').value.trim();
+    try { navigator.clipboard.writeText(txt).catch(function () {}); } catch (e) {}
+    document.getElementById('copie-ok').hidden = false;
+    window.open('https://g.page/r/CRUJUcm08WShEBM/review', '_blank', 'noopener');
+  });
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     var v = function (id) { return document.getElementById(id).value.trim(); };
@@ -199,6 +208,7 @@ var API = 'https://vidantik-avis.vidantikk.workers.dev/avis';
         if (!res.ok) { var er = new Error(res.j && res.j.erreur || ''); er.serveur = true; throw er; }
         form.querySelectorAll('.field, .row2, .check, .actions').forEach(function (x) { x.style.display = 'none'; });
         document.getElementById('sent').hidden = false;
+        var g = document.querySelector('.google'); if (g) g.hidden = true;
       })
       .catch(function (ex) {
         btn.disabled = false; btn.textContent = 'Envoyer mon avis';
