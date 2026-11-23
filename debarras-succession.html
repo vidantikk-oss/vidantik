@@ -139,6 +139,16 @@ main { padding-block: clamp(36px, 6vw, 72px); }
 
 @keyframes damier-glisse { from { background-position: 0 0; } to { background-position: 28px 0; } }
 @media (prefers-reduced-motion: reduce) { .topbar::after, .checker { animation: none !important; } }
+
+/* Fondus de vert sur les grandes zones vertes (boutons et textes restent en vert uni) */
+.topbar { background: linear-gradient(100deg, #1b3826 0%, #24482f 30%, #2f5e3d 62%, #1f4029 100%) !important; }
+.sim-promo, .green-band, .footer {
+  background:
+    radial-gradient(ellipse 55% 80% at 82% 15%, rgba(74, 128, 92, .45), transparent 70%),
+    radial-gradient(ellipse 50% 70% at 0% 100%, rgba(10, 30, 18, .5), transparent 70%),
+    linear-gradient(150deg, #2f5e3d 0%, #24482f 50%, #1b3826 100%) !important; }
+.callbar { background: linear-gradient(90deg, #1b3826 0%, #2a5537 50%, #1b3826 100%) !important; }
+.chat-head { background: linear-gradient(100deg, #1b3826 0%, #2b5638 100%) !important; }
 </style>
 </head>
 <body>
