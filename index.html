@@ -406,9 +406,9 @@ textarea { min-height: 120px; resize: vertical; }
 .band.hero { background-color: #f4eedb; background-image: radial-gradient(rgba(45, 90, 58, .16) 1px, transparent 1.4px), radial-gradient(ellipse at 50% 0%, #fffcf0 0%, #f4eedb 55%, #ebe3c8 100%); background-size: 22px 22px, 100% 100%; padding-block: clamp(36px, 6vw, 84px); }
 .band.hero .frame.ring { padding: 0 !important; background: var(--paper) !important; border: 1px solid rgba(45, 90, 58, .22) !important; box-shadow: 0 24px 50px -30px rgba(31, 64, 41, .45); }
 .band.hero .frame.ring > .ring-inner { border: 0 !important; position: relative; background: var(--paper) !important; }
-.band.hero .frame.ring > .ring-inner::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 12px; background-color: var(--paper);
-  background-image: conic-gradient(var(--paper) 25%, var(--green) 0 50%, var(--paper) 0 75%, var(--green) 0); background-size: 12px 12px; }
-.hero-inner.hero-pro { padding-top: clamp(48px, 6vw, 84px); }
+/* Liseré damier sous la barre de navigation (le reste de la page reste clair) */
+.topbar::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 6px; pointer-events: none; background-color: var(--paper);
+  background-image: conic-gradient(var(--paper) 25%, var(--green) 0 50%, var(--paper) 0 75%, var(--green) 0); background-size: 12px 12px; background-repeat: repeat-x; }
 .checker { display: none !important; }
 </style>
 </head>
