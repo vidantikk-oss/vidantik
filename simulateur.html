@@ -173,6 +173,17 @@ main { padding-block: clamp(28px, 5vw, 56px); }
   .stage { aspect-ratio: 4 / 3; }
   :root { --sq: 8px; --rule: 2px; }
 }
+
+/* Habillage sobre (nov. 2026) : plus de cadre damier autour de la page,
+   damier conservé en fin liseré et en cadre fin autour de l'accueil */
+.site-ring, .site-ring > .ring-inner { border: 0 !important; padding: 0 !important; background: none !important; }
+.checker { height: 6px !important; border: 0 !important; background-color: var(--paper) !important;
+  background-image: conic-gradient(var(--paper) 25%, var(--green) 0 50%, var(--paper) 0 75%, var(--green) 0) !important;
+  background-size: 12px 12px !important; background-repeat: repeat-x !important; opacity: .9; }
+.frame.ring { border: 1px solid var(--green) !important; padding: 12px !important;
+  background-color: var(--paper) !important; background-image: conic-gradient(var(--paper) 25%, var(--green) 0 50%, var(--paper) 0 75%, var(--green) 0) !important;
+  background-size: 12px 12px !important; background-repeat: round !important; box-shadow: 0 18px 40px -28px rgba(31, 64, 41, .55); }
+.frame.ring > .ring-inner { border: 1px solid var(--green) !important; }
 </style>
 </head>
 <body>
