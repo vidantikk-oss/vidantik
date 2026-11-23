@@ -20,8 +20,8 @@ export default {
       if (url.pathname === '/avis' && req.method === 'GET') return listePublique(env, cors);
       if (url.pathname === '/avis' && req.method === 'POST') return deposer(req, env, cors);
       if (url.pathname === '/admin' && req.method === 'GET') return new Response(PAGE_ADMIN, { headers: { 'content-type': 'text/html; charset=utf-8' } });
-      if (url.pathname === '/admin/liste' && req.method === 'POST') return adminListe(req, env);
-      if (url.pathname === '/admin/action' && req.method === 'POST') return adminAction(req, env);
+      if (url.pathname === '/admin/liste' && req.method === 'POST') return adminListe(req, env, cors);
+      if (url.pathname === '/admin/action' && req.method === 'POST') return adminAction(req, env, cors);
       return new Response('Vid\'Antik - avis', { status: 404 });
     } catch (e) {
       return json({ ok: false, erreur: 'Erreur serveur' }, 500, cors);
@@ -86,7 +86,7 @@ async function deposer(req, env, cors) {
     try {
       await fetch('https://ntfy.sh/' + env.NTFY_TOPIC, {
         method: 'POST',
-        headers: { Title: 'Nouvel avis Vid\'Antik (' + avis.note + '/5)', Click: new URL(req.url).origin + '/admin' },
+        headers: { Title: 'Nouvel avis Vid\'Antik (' + avis.note + '/5)', Click: 'https://vidantik.fr/admin.html' },
         body: avis.nom + ' : ' + avis.texte.slice(0, 200)
       });
     } catch (e) {}
@@ -94,22 +94,32 @@ async function deposer(req, env, cors) {
   return json({ ok: true }, 200, cors);
 }
 
+// Bloque l'accès admin après 10 codes faux en une heure (par adresse IP)
 async function verifier(req, env) {
   let d = {};
   try { d = await req.json(); } catch (e) {}
+  const ip = req.headers.get('CF-Connecting-IP') || 'inconnue';
+  const cle = 'essais:' + new Date().toISOString().slice(0, 13) + ':' + ip;
+  const essais = Number(await env.AVIS_KV.get(cle)) || 0;
+  if (essais >= 10) return { bloque: true };
   const ok = env.ADMIN_CODE && typeof d.code === 'string' && d.code === env.ADMIN_CODE;
-  return ok ? d : null;
+  if (!ok) { await env.AVIS_KV.put(cle, String(essais + 1), { expirationTtl: 3600 }); return null; }
+  return d;
 }
 
-async function adminListe(req, env) {
-  const d = await verifier(req, env);
-  if (!d) return json({ ok: false, erreur: 'Code incorrect' }, 401);
-  return json({ ok: true, attente: await lire(env, 'attente'), publies: await lire(env, 'publies') });
+function refus(v, cors) {
+  return v && v.bloque ? json({ ok: false, erreur: 'Trop d\'essais' }, 429, cors) : json({ ok: false, erreur: 'Code incorrect' }, 401, cors);
 }
 
-async function adminAction(req, env) {
+async function adminListe(req, env, cors) {
   const d = await verifier(req, env);
-  if (!d) return json({ ok: false, erreur: 'Code incorrect' }, 401);
+  if (!d || d.bloque) return refus(d, cors);
+  return json({ ok: true, attente: await lire(env, 'attente'), publies: await lire(env, 'publies') }, 200, cors);
+}
+
+async function adminAction(req, env, cors) {
+  const d = await verifier(req, env);
+  if (!d || d.bloque) return refus(d, cors);
   const attente = await lire(env, 'attente');
   const publies = await lire(env, 'publies');
   const iA = attente.findIndex(a => a.id === d.id);
@@ -117,58 +127,10 @@ async function adminAction(req, env) {
   if (d.action === 'publier' && iA >= 0) { publies.unshift(attente.splice(iA, 1)[0]); }
   else if (d.action === 'supprimer' && iA >= 0) { attente.splice(iA, 1); }
   else if (d.action === 'retirer' && iP >= 0) { attente.unshift(publies.splice(iP, 1)[0]); }
-  else return json({ ok: false, erreur: 'Avis introuvable' }, 404);
+  else return json({ ok: false, erreur: 'Avis introuvable' }, 404, cors);
   await env.AVIS_KV.put('attente', JSON.stringify(attente));
   await env.AVIS_KV.put('publies', JSON.stringify(publies));
-  return json({ ok: true });
+  return json({ ok: true }, 200, cors);
 }
 
-const PAGE_ADMIN = `<!DOCTYPE html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>Avis - administration Vid'Antik</title>
-<style>
-body{font-family:system-ui,sans-serif;background:#f7f2df;color:#1f2a22;margin:0;padding:20px;max-width:760px;margin-inline:auto}
-h1{color:#2d5a3a;font-size:1.5rem}h2{color:#2d5a3a;font-size:1.15rem;margin-top:32px}
-.carte{background:#fffcf0;border:1px solid #d9d1b5;padding:16px;margin:12px 0;display:grid;gap:8px}
-.etoiles{color:#d98e2b;font-size:1.2rem}.meta{color:#6b6b5e;font-size:.9rem}
-button{font:inherit;padding:10px 16px;border:0;cursor:pointer;margin-right:8px}
-.pub{background:#2d5a3a;color:#fff}.sup{background:#9b2c1c;color:#fff}.ret{background:#ddd}
-input{font:inherit;padding:10px;width:220px}.vide{color:#6b6b5e;font-style:italic}
-</style></head><body>
-<h1>Avis clients - Vid'Antik</h1>
-<div id="connexion"><p>Entre ton code administrateur :</p><input type="password" id="code"> <button class="pub" id="ok">Entrer</button><p id="msg"></p></div>
-<div id="zone" hidden>
-<h2>En attente de validation</h2><div id="attente"></div>
-<h2>Publiés sur le site</h2><div id="publies"></div>
-</div>
-<script>
-var code = sessionStorage.getItem('c') || '';
-function el(t, c, x){ var e=document.createElement(t); if(c) e.className=c; if(x!=null) e.textContent=x; return e; }
-function carte(a, boutons){
-  var d=el('div','carte');
-  d.appendChild(el('div','etoiles','★★★★★'.slice(0,a.note)+'☆☆☆☆☆'.slice(0,5-a.note)));
-  d.appendChild(el('div','', a.texte));
-  d.appendChild(el('div','meta', a.nom+(a.commune?' · '+a.commune:'')+(a.prestation?' · '+a.prestation:'')+' · '+a.date));
-  var b=el('div'); boutons.forEach(function(x){ var bt=el('button',x[1],x[0]); bt.onclick=function(){ agir(a.id,x[2],x[3]); }; b.appendChild(bt); }); d.appendChild(b);
-  return d;
-}
-function charger(){
-  fetch('/admin/liste',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({code:code})}).then(function(r){return r.json();}).then(function(d){
-    if(!d.ok){ document.getElementById('msg').textContent='Code incorrect.'; sessionStorage.removeItem('c'); return; }
-    sessionStorage.setItem('c',code);
-    document.getElementById('connexion').hidden=true; document.getElementById('zone').hidden=false;
-    var A=document.getElementById('attente'), P=document.getElementById('publies'); A.textContent=''; P.textContent='';
-    if(!d.attente.length) A.appendChild(el('p','vide','Aucun nouvel avis.'));
-    d.attente.forEach(function(a){ A.appendChild(carte(a,[['Publier','pub','publier'],['Supprimer','sup','supprimer','Supprimer définitivement cet avis ?']])); });
-    if(!d.publies.length) P.appendChild(el('p','vide','Aucun avis publié pour l\\'instant.'));
-    d.publies.forEach(function(a){ P.appendChild(carte(a,[['Retirer du site','ret','retirer']])); });
-  });
-}
-function agir(id,action,question){
-  if(question && !confirm(question)) return;
-  fetch('/admin/action',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({code:code,id:id,action:action})}).then(charger);
-}
-document.getElementById('ok').onclick=function(){ code=document.getElementById('code').value; charger(); };
-document.getElementById('code').onkeydown=function(e){ if(e.key==='Enter') document.getElementById('ok').click(); };
-if(code) charger();
-</script></body></html>`;
+const PAGE_ADMIN = `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=https://vidantik.fr/admin.html"><meta name="robots" content="noindex"></head><body><a href="https://vidantik.fr/admin.html">Administration des avis</a></body></html>`;
