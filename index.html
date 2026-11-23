@@ -433,6 +433,21 @@ textarea { min-height: 120px; resize: vertical; }
 .callbar { background: linear-gradient(90deg, #1b3826 0%, #2a5537 50%, #1b3826 100%) !important; }
 .chat-head { background: linear-gradient(100deg, #1b3826 0%, #2b5638 100%) !important; }
 .footer .wrap.legal { display: block; padding-block: 16px; }
+
+/* Diagonale calée sur le coin bas-gauche du bouton « Simulateur photo » (calcul en JS, écrans larges) */
+.band.hero { position: relative; isolation: isolate; }
+.band.hero > .wrap { position: relative; z-index: 2; }
+.hd-green, .hd-orange { display: none; position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.band.hero.diag-js { background: linear-gradient(115deg, #fbf7e8 0%, #f1ead0 60%, #f4eed9 100%) !important; }
+.band.hero.diag-js .hd-green, .band.hero.diag-js .hd-orange { display: block; }
+.hd-green { background:
+    radial-gradient(ellipse 45% 70% at 70% 30%, rgba(74, 128, 92, .55), transparent 70%),
+    radial-gradient(ellipse 50% 60% at 100% 100%, rgba(10, 30, 18, .55), transparent 70%),
+    linear-gradient(150deg, #2f5e3d 0%, #24482f 50%, #1b3826 100%); }
+.hd-orange { background: #d98e2b; }
+.hd-link { display: none; position: absolute; left: 0; top: 0; width: 100%; z-index: 2; pointer-events: none; background: #d98e2b; transition: opacity .25s ease; }
+.hd-link.on { display: block; }
+.hd-link.off { opacity: 0; }
 </style>
 </head>
 <body>
@@ -478,6 +493,7 @@ textarea { min-height: 120px; resize: vertical; }
 
 <div class="ring site-ring"><div class="ring-inner">
 <header class="band topbar">
+  <span class="hd-link" aria-hidden="true"></span>
   <div class="wrap">
     <a class="logo" href="#top">VID'ANTIK</a>
     <button class="menu-btn" type="button" aria-expanded="false" aria-controls="nav"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>Menu</button>
@@ -497,6 +513,7 @@ textarea { min-height: 120px; resize: vertical; }
 </header>
 
 <section class="band hero" id="top">
+  <div class="hd-green" aria-hidden="true"></div><div class="hd-orange" aria-hidden="true"></div>
   <div class="wrap">
     <div class="frame ring">
       <div class="frame-inner ring-inner hero-inner hero-pro">
@@ -1458,6 +1475,40 @@ var LIENS = {
       await cycle();
     }
   })();
+})();
+</script>
+<script>
+(function () {
+  var hero = document.querySelector('.band.hero'), btn = document.querySelector('.nav a.nav-sim');
+  if (!hero || !btn) return;
+  var g = hero.querySelector('.hd-green'), o = hero.querySelector('.hd-orange'), lien = document.querySelector('.hd-link');
+  window.addEventListener('scroll', function () { if (lien) lien.classList.toggle('off', window.scrollY > 4); }, { passive: true });
+  var T = Math.tan(25 * Math.PI / 180), C = Math.cos(25 * Math.PI / 180);
+  var ORANGE = 5 / C, GAP = 12 / C; // largeurs mesurées perpendiculairement au trait
+  var caler = function () {
+    var b = btn.getBoundingClientRect(), h = hero.getBoundingClientRect();
+    if (!b.width || window.innerWidth <= 860) { hero.classList.remove('diag-js'); if (lien) lien.classList.remove('on'); return; }
+    var W = h.width, H = h.height, bx = b.left - h.left, by = b.bottom - h.top;
+    var x = function (y) { return bx - T * (y - by); }; // bord gauche du filet orange passe par le coin
+    var p = function (pts) { return 'polygon(' + pts.map(function (q) { return q[0].toFixed(1) + 'px ' + q[1].toFixed(1) + 'px'; }).join(',') + ')'; };
+    o.style.clipPath = p([[x(0), 0], [x(0) + ORANGE, 0], [x(H) + ORANGE, H], [x(H), H]]);
+    var gx = function (y) { return x(y) + ORANGE + GAP; };
+    g.style.clipPath = p([[gx(0), 0], [W, 0], [W, H], [gx(H), H]]);
+    hero.classList.add('diag-js');
+    // prolongement du filet à travers le damier jusqu'au coin du bouton
+    if (lien) {
+      var tb = lien.parentNode.getBoundingClientRect(), hh = h.top - tb.top + 15; // jusqu'au bas du damier
+      var y0 = b.bottom - tb.top, xl = function (yy) { return b.left - tb.left - T * (yy - y0); };
+      lien.style.height = hh + 'px';
+      lien.style.clipPath = p([[xl(y0), y0], [xl(y0) + ORANGE, y0], [xl(hh) + ORANGE, hh], [xl(hh), hh]]);
+      lien.classList.add('on');
+    }
+  };
+  caler();
+  window.addEventListener('resize', caler);
+  window.addEventListener('load', caler);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(caler);
+  if (window.ResizeObserver) new ResizeObserver(caler).observe(hero);
 })();
 </script>
 </body>
