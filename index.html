@@ -403,8 +403,16 @@ textarea { min-height: 120px; resize: vertical; }
 }
 
 /* Accueil : fond crème et pan vert en diagonale avec filet orange, carte sobre avec une seule bande de damier en haut */
-.band.hero { background: linear-gradient(115deg, #f7f2df 0 58%, #d98e2b 58% 58.35%, #f7f2df 58.35% 59.2%, #24482f 59.2% 100%); padding-block: clamp(36px, 6vw, 84px); }
-@media (max-width: 860px) { .band.hero { background: linear-gradient(160deg, #f7f2df 0 52%, #d98e2b 52% 52.5%, #f7f2df 52.5% 53.6%, #24482f 53.6% 100%); } }
+.band.hero { padding-block: clamp(36px, 6vw, 84px);
+  background:
+    linear-gradient(115deg, #fbf7e8 0%, #f1ead0 58%, #d98e2b 58% 58.35%, #f4eed9 58.35% 59.2%, transparent 59.2%),
+    radial-gradient(ellipse 45% 70% at 70% 30%, rgba(74, 128, 92, .55), transparent 70%),
+    radial-gradient(ellipse 50% 60% at 100% 100%, rgba(10, 30, 18, .55), transparent 70%),
+    linear-gradient(150deg, #2f5e3d 0%, #24482f 50%, #1b3826 100%); }
+@media (max-width: 860px) { .band.hero { background:
+    linear-gradient(160deg, #fbf7e8 0%, #f1ead0 52%, #d98e2b 52% 52.5%, #f4eed9 52.5% 53.6%, transparent 53.6%),
+    radial-gradient(ellipse 70% 40% at 30% 75%, rgba(74, 128, 92, .5), transparent 70%),
+    linear-gradient(170deg, #2f5e3d 0%, #24482f 55%, #1b3826 100%); } }
 .band.hero .frame.ring { padding: 0 !important; background: var(--paper) !important; border: 1px solid rgba(45, 90, 58, .22) !important; box-shadow: 0 24px 50px -30px rgba(31, 64, 41, .45); }
 .band.hero .frame.ring > .ring-inner { border: 0 !important; position: relative; background: var(--paper) !important; }
 /* Liseré damier sous la barre de navigation (le reste de la page reste clair) */
